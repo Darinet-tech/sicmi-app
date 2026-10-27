@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 
 
 @api_view(['GET'])
@@ -8,9 +9,13 @@ from rest_framework.response import Response
 def salud(request):
     """Vista de prueba para comprobar que la API responde."""
     return Response({'estado': 'ok', 'mensaje': 'La API de SiCMI funciona'})
+
+
 @api_view(['GET'])
 def yo(request):
     """Devuelve los datos del usuario autenticado."""
+    if not hasattr(request.user, 'perfil'):
+        raise PermissionDenied('Su usuario no tiene un perfil asignado. Contacte al administrador.')
     p = request.user.perfil
     return Response({
         'username': request.user.username,

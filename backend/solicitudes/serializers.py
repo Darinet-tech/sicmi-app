@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Solicitud, HistorialEstado
+from .transiciones import puede_transicionar
 
 
 class HistorialSerializer(serializers.ModelSerializer):
@@ -16,13 +17,19 @@ class SolicitudSerializer(serializers.ModelSerializer):
     estado_display = serializers.CharField(source='get_estado_display', read_only=True)
     historial = HistorialSerializer(many=True, read_only=True)
 
+    acciones_permitidas = serializers.SerializerMethodField()
+
+    def get_acciones_permitidas(self, obj):
+        perfil = self.context['request'].user.perfil
+        return [e for e in Solicitud.Estado.values if puede_transicionar(obj, e, perfil)]
+
     class Meta:
         model = Solicitud
         fields = [
             'id', 'uo', 'inmueble', 'inmueble_nombre', 'centro_costo',
             'area_solicitante', 'local', 'descripcion', 'foto',
             'solicitante', 'solicitante_nombre', 'estado', 'estado_display',
-            'es_urgente', 'motivo_devolucion', 'creada', 'actualizada', 'historial',
+            'es_urgente', 'motivo_devolucion', 'creada', 'actualizada', 'historial','acciones_permitidas',
         ]
         # El cliente NO puede fijar estos campos: los pone el servidor
         read_only_fields = ['uo', 'solicitante', 'estado', 'es_urgente', 'motivo_devolucion']
@@ -35,3 +42,5 @@ class SolicitudSerializer(serializers.ModelSerializer):
         if 'centro_costo' in datos and datos['centro_costo'].uo_id != uo.id:
             raise serializers.ValidationError('El centro de costo no pertenece a su UO.')
         return datos
+
+

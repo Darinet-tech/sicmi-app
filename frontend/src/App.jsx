@@ -1,26 +1,35 @@
-import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth } from './AuthContext'
+import Layout from './Layout'
+import Login from './pages/Login'
+import Solicitudes from './pages/Solicitudes'
+import SolicitudForm from './pages/SolicitudForm'
+import SolicitudDetalle from './pages/SolicitudDetalle'
 
-function App() {
-  const [respuesta, setRespuesta] = useState(null)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    axios
-      .get('http://127.0.0.1:8000/api/salud/')
-      .then((res) => setRespuesta(res.data))
-      .catch(() => setError('No se pudo conectar con el backend'))
-  }, [])
-
-  return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>SiCMI</h1>
-      <h3>Sistema de Control del Mantenimiento a Inmuebles</h3>
-      {respuesta && <p style={{ color: 'green' }}>{respuesta.mensaje}</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {!respuesta && !error && <p>Conectando...</p>}
-    </div>
-  )
+// Protege las pantallas: sin sesión, redirige al login
+function Privada({ children }) {
+  const { usuario, cargando } = useAuth()
+  if (cargando) return <p style={{ padding: '2rem' }}>Cargando...</p>
+  return usuario ? children : <Navigate to="/login" replace />
 }
 
-export default App
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route
+        element={
+          <Privada>
+            <Layout />
+          </Privada>
+        }
+      >
+        <Route index element={<Navigate to="/solicitudes" replace />} />
+        <Route path="/solicitudes" element={<Solicitudes />} />
+        <Route path="/solicitudes/nueva" element={<SolicitudForm />} />
+        <Route path="/solicitudes/:id" element={<SolicitudDetalle />} />
+        <Route path="/solicitudes/:id/editar" element={<SolicitudForm />} />
+      </Route>
+    </Routes>
+  )
+}

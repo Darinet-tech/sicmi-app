@@ -1,11 +1,13 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class UnidadOrganizativa(models.Model):
     """Unidad Organizativa (UO) de la empresa. Separa los datos por territorio o área."""
     nombre = models.CharField(max_length=120, unique=True)
-    codigo = models.CharField(max_length=20, unique=True)
+    acronimo = models.CharField(max_length=20, unique=True, null=True, blank=True)
     activa = models.BooleanField(default=True)
 
     class Meta:
@@ -14,7 +16,7 @@ class UnidadOrganizativa(models.Model):
         ordering = ['nombre']
 
     def __str__(self):
-        return f'{self.codigo} - {self.nombre}'
+        return f'{self.acronimo} - {self.nombre}'
 
 
 class Perfil(models.Model):
@@ -48,3 +50,8 @@ class Perfil(models.Model):
     @property
     def es_central(self):
         return self.rol == self.Rol.CENTRAL
+
+    @receiver(post_save, sender=settings.AUTH_USER_MODEL)
+    def perfil_para_superusuario(sender, instance, created, **kwargs):
+        if created and instance.is_superuser and not hasattr(instance, 'perfil'):
+            Perfil.objects.create(usuario=instance, rol=Perfil.Rol.CENTRAL)

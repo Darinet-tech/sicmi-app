@@ -55,13 +55,15 @@ class SolicitudViewSet(viewsets.ModelViewSet):
         if not puede_transicionar(solicitud, nuevo, perfil):
             return Response({'detalle': 'No tiene permiso para este cambio de estado.'},
                             status=status.HTTP_403_FORBIDDEN)
-        if nuevo == Solicitud.Estado.DEVUELTA and not comentario:
-            return Response({'detalle': 'Debe indicar el motivo de la devolución.'},
+        if nuevo == Solicitud.Estado.EN_PROGRAMACION and 'es_urgente' not in request.data:
+            return Response({'detalle': 'Debe indicar si el trabajo es urgente o no.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
             anterior = solicitud.estado
             solicitud.estado = nuevo
+            if nuevo == Solicitud.Estado.EN_PROGRAMACION:
+                solicitud.es_urgente = str(request.data['es_urgente']).lower() in ('true', '1')
             if nuevo == Solicitud.Estado.DEVUELTA:
                 solicitud.motivo_devolucion = comentario
             if 'es_urgente' in request.data and nuevo == Solicitud.Estado.EN_PROGRAMACION:

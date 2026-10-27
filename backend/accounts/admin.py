@@ -4,9 +4,8 @@ from .models import UnidadOrganizativa, Perfil
 
 @admin.register(UnidadOrganizativa)
 class UnidadOrganizativaAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'nombre', 'activa')
-    search_fields = ('codigo', 'nombre')
-
+    list_display = ('acronimo', 'nombre', 'activa')
+    search_fields = ('acronimo', 'nombre')
 
 @admin.register(Perfil)
 class PerfilAdmin(admin.ModelAdmin):
