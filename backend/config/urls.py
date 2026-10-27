@@ -16,13 +16,21 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('accounts.urls')),
-    
+    path('api/', include('solicitudes.urls')),
+    path('api/token/', TokenObtainPairView.as_view(), name='token'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
 admin.site.site_header = 'SiCMI - Administración'
 admin.site.site_title = 'SiCMI'
 admin.site.index_title = 'Sistema de Control del Mantenimiento a Inmuebles'
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
