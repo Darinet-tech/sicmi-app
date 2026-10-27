@@ -14,7 +14,8 @@ function App() {
 
   return (
     <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>Sistema de Mantenimiento de Inmuebles</h1>
+      <h1>SiCMI</h1>
+      <h3>Sistema de Control del Mantenimiento a Inmuebles</h3>
       {respuesta && <p style={{ color: 'green' }}>{respuesta.mensaje}</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {!respuesta && !error && <p>Conectando...</p>}

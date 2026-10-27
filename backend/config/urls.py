@@ -20,4 +20,9 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('accounts.urls')),
+    
 ]
+
+admin.site.site_header = 'SiCMI - Administración'
+admin.site.site_title = 'SiCMI'
+admin.site.index_title = 'Sistema de Control del Mantenimiento a Inmuebles'
