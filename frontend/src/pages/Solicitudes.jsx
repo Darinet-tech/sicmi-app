@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api, { textoError } from '../api'
 import { useAuth } from '../AuthContext'
+import { ClipboardList } from 'lucide-react'
+import PaginaModulo from '../PaginaModulo'
 
 export const ESTADOS = {
   ENVIADA: 'Enviada',
@@ -36,19 +38,25 @@ export default function Solicitudes() {
   const visibles = filtro ? lista.filter((s) => s.estado === filtro) : lista
 
   return (
-    <>
-      <div className="barra">
-        <h2>Solicitudes de mantenimiento</h2>
-        {usuario.rol === 'CLIENTE' && (
+    <PaginaModulo
+      icono={ClipboardList}
+      titulo="Solicitudes de servicio"
+      descripcion="Mantenimiento correctivo: registro, revisión e inspección."
+      acciones={
+        usuario.rol === 'CLIENTE' && (
           <Link className="btn btn-verde" to="/solicitudes/nueva">
             + Nueva solicitud
           </Link>
-        )}
-      </div>
-
+        )
+      }
+    >
       <div className="tarjeta">
         <label style={{ marginTop: 0 }}>Filtrar por estado</label>
-        <select value={filtro} onChange={(e) => setFiltro(e.target.value)} style={{ maxWidth: 260 }}>
+        <select
+          value={filtro}
+          onChange={(e) => setFiltro(e.target.value)}
+          style={{ maxWidth: 260 }}
+        >
           <option value="">Todos</option>
           {Object.entries(ESTADOS).map(([valor, texto]) => (
             <option key={valor} value={valor}>{texto}</option>
@@ -57,6 +65,7 @@ export default function Solicitudes() {
       </div>
 
       {error && <div className="error">{error}</div>}
+
       {cargando ? (
         <p>Cargando...</p>
       ) : visibles.length === 0 ? (
@@ -90,6 +99,6 @@ export default function Solicitudes() {
           </tbody>
         </table>
       )}
-    </>
+    </PaginaModulo>
   )
 }

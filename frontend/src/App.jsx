@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Solicitudes from './pages/Solicitudes'
 import SolicitudForm from './pages/SolicitudForm'
 import SolicitudDetalle from './pages/SolicitudDetalle'
+import Inicio from './pages/Inicio'
 
 // Protege las pantallas: sin sesión, redirige al login
 function Privada({ children }) {
@@ -24,7 +25,7 @@ export default function App() {
           </Privada>
         }
       >
-        <Route index element={<Navigate to="/solicitudes" replace />} />
+        <Route index element={<Inicio />} />
         <Route path="/solicitudes" element={<Solicitudes />} />
         <Route path="/solicitudes/nueva" element={<SolicitudForm />} />
         <Route path="/solicitudes/:id" element={<SolicitudDetalle />} />

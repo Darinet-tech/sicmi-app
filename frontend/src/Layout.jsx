@@ -1,28 +1,35 @@
 import { Link, Outlet } from 'react-router-dom'
+import { LogOut } from 'lucide-react'
 import { useAuth } from './AuthContext'
 
 export default function Layout() {
   const { usuario, logout } = useAuth()
+  const iniciales = usuario.nombre
+    .split(' ')
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase()
 
   return (
     <>
-      <header className="encabezado">
-        <div>
-          <Link to="/solicitudes" style={{ color: '#fff', textDecoration: 'none' }}>
-            <h1>SiCMI</h1>
-          </Link>
-          <small>Sistema de Control del Mantenimiento a Inmuebles</small>
-        </div>
-        <div className="usuario">
-          <div>{usuario.nombre}</div>
-          <small>
-            {usuario.rol_display} · {usuario.uo_nombre || 'Nivel central'}
-          </small>
+      <header className="topbar">
+        <Link to="/" className="marca">
+          <div className="marca-logo">Si</div>
           <div>
-            <button className="btn btn-gris" onClick={logout} style={{ marginTop: 4 }}>
-              Cerrar sesión
-            </button>
+            <b>SiCMI</b>
+            <small>Control del Mantenimiento a Inmuebles</small>
           </div>
+        </Link>
+        <div className="topbar-der">
+          <div className="quien">
+            <div>{usuario.nombre}</div>
+            <small>{usuario.rol_display}</small>
+          </div>
+          <div className="avatar">{iniciales}</div>
+          <button className="btn-icono" onClick={logout} title="Cerrar sesión">
+            <LogOut size={18} />
+          </button>
         </div>
       </header>
       <main className="contenedor">

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'accounts',
     'catalogos',
     'solicitudes',
+    'recursos',
 ]
 
 MIDDLEWARE = [

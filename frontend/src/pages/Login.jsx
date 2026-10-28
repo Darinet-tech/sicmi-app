@@ -11,7 +11,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
-  if (usuario) return <Navigate to="/solicitudes" replace />
+  if (usuario) return <Navigate to="/" replace />
 
   async function enviar(e) {
     e.preventDefault()
@@ -19,7 +19,7 @@ export default function Login() {
     setEnviando(true)
     try {
       await login(username, password)
-      navigate('/solicitudes')
+      navigate('/')
     } catch (err) {
       if (err.response?.status === 401) {
         setError('Usuario o contraseña incorrectos.')
