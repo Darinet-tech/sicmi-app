@@ -1,7 +1,12 @@
-import { ClipboardList, FileCheck2, Package, CalendarRange, BarChart3, Building2 } from 'lucide-react'
+import {
+  ClipboardList, FileCheck2, Package, CalendarRange,
+  BarChart3, Building2, Users, Truck,
+} from 'lucide-react'
 
 // roles: 'todos' o una lista de roles con acceso
 // disponible: false = módulo aún no construido
+const GESTION = ['ESPECIALISTA', 'JEFE_BRIGADA', 'JEFE_GRUPO', 'JEFE_LOGISTICA', 'DIRECTOR_UO', 'CENTRAL']
+
 export const MODULOS = [
   {
     id: 'solicitudes',
@@ -21,6 +26,24 @@ export const MODULOS = [
     roles: 'todos',
     disponible: false,
     fase: 'Fase 4',
+  },
+  {
+    id: 'personal',
+    titulo: 'Personal y brigadas',
+    descripcion: 'Estado diario de los trabajadores y composición de las brigadas.',
+    icono: Users,
+    ruta: '/personal',
+    roles: GESTION,
+    disponible: true,
+  },
+  {
+    id: 'transporte',
+    titulo: 'Transporte',
+    descripcion: 'Disponibilidad diaria de los vehículos y causas de paralización.',
+    icono: Truck,
+    ruta: '/transporte',
+    roles: GESTION,
+    disponible: true,
   },
   {
     id: 'recursos',
