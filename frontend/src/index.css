@@ -232,3 +232,64 @@ a { color: var(--azul); }
 .pagina-cab h2 { margin: 0; color: var(--azul); }
 .pagina-cab p { margin: 0; color: var(--gris); font-size: 0.9rem; }
 .pagina-cab .acciones { margin-left: auto; }
+
+/* ========== Módulo con menú lateral ========== */
+.modulo-layout { display: grid; grid-template-columns: 220px 1fr; gap: 1.25rem; align-items: start; }
+.menu-lateral {
+  position: sticky; top: 80px;
+  display: flex; flex-direction: column; gap: 0.25rem;
+  background: #fff; border: 1px solid var(--borde); border-radius: 16px; padding: 0.6rem;
+}
+.menu-lateral a {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.65rem 0.8rem; border-radius: 10px;
+  color: var(--texto); text-decoration: none; font-size: 0.92rem; font-weight: 600;
+}
+.menu-lateral a:hover { background: var(--fondo); }
+.menu-lateral a.activo { background: var(--azul); color: #fff; }
+.modulo-contenido { min-width: 0; }
+@media (max-width: 760px) {
+  .modulo-layout { grid-template-columns: 1fr; }
+  .menu-lateral { position: static; flex-direction: row; overflow-x: auto; }
+}
+
+/* ========== Tablas y formularios del módulo ========== */
+.tabla-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--borde); background: #fff; }
+.tabla-wrap table { border: none; }
+.fila-heredada td { background: #fffbe6; }
+input[type='date'] {
+  padding: 0.55rem; border: 1px solid var(--borde); border-radius: 6px;
+  font-size: 0.95rem; font-family: inherit; width: 100%;
+}
+.dos-columnas { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 600px) { .dos-columnas { grid-template-columns: 1fr; } }
+.exito { background: #e6f7e9; color: #05600f; border-radius: 6px; padding: 0.6rem 0.8rem; margin: 0.8rem 0; }
+
+/* ========== Estados de trabajadores ========== */
+.t-TRABAJANDO { background: #d6f5db; color: #05600f; }
+.t-VACACIONES { background: #dfe3fb; color: var(--azul); }
+.t-ENFERMO { background: #fdecea; color: var(--rojo); }
+.t-FUERA { background: #e0f2fe; color: #075985; }
+.t-CURSO { background: #f3e8ff; color: #6b21a8; }
+.t-AUSENTE { background: #fff1cc; color: #7a5600; }
+.resumen-estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.6rem; margin-bottom: 1rem; }
+.resumen-item { border-radius: 12px; padding: 0.6rem 0.9rem; }
+.resumen-item b { display: block; font-size: 1.5rem; line-height: 1.1; }
+.resumen-item span { font-size: 0.8rem; font-weight: 600; }
+
+/* ========== Brigadas ========== */
+.brigadas { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; align-items: start; }
+.brigadas .tarjeta { margin-bottom: 0; }
+.miembros { list-style: none; margin: 0; padding: 0; }
+.miembros li {
+  display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 0; border-bottom: 1px solid var(--borde);
+}
+.miembros small { display: block; color: var(--gris); }
+.btn-icono-gris {
+  display: grid; place-items: center; padding: 0.4rem; cursor: pointer;
+  background: #e3e6ec; color: var(--texto); border: none; border-radius: 8px;
+}
+.btn-icono-gris:hover { background: #f4c7c3; color: var(--rojo); }
+.agregar-miembro { display: flex; gap: 0.5rem; margin-top: 0.9rem; }
+.agregar-miembro .btn { padding: 0.5rem 0.8rem; }

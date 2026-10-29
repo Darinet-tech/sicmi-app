@@ -6,6 +6,10 @@ import Solicitudes from './pages/Solicitudes'
 import SolicitudForm from './pages/SolicitudForm'
 import SolicitudDetalle from './pages/SolicitudDetalle'
 import Inicio from './pages/Inicio'
+import PersonalLayout from './pages/personal/PersonalLayout'
+import PaseLista from './pages/personal/PaseLista'
+import Trabajadores from './pages/personal/Trabajadores'
+import Brigadas from './pages/personal/Brigadas'
 
 // Protege las pantallas: sin sesión, redirige al login
 function Privada({ children }) {
@@ -30,6 +34,12 @@ export default function App() {
         <Route path="/solicitudes/nueva" element={<SolicitudForm />} />
         <Route path="/solicitudes/:id" element={<SolicitudDetalle />} />
         <Route path="/solicitudes/:id/editar" element={<SolicitudForm />} />
+        <Route path="/personal" element={<PersonalLayout />}>
+        <Route index element={<Navigate to="pase-lista" replace />} />
+        <Route path="pase-lista" element={<PaseLista />} />
+        <Route path="trabajadores" element={<Trabajadores />} />
+        <Route path="brigadas" element={<Brigadas />} />
+        </Route>
       </Route>
     </Routes>
   )
