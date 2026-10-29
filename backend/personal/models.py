@@ -3,13 +3,60 @@ from django.db import models
 from django.db.models import Q
 
 from accounts.models import UnidadOrganizativa
+from django.core.validators import RegexValidator
+
+
+LETRAS = [('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')]
 
 
 class Trabajador(models.Model):
+    class Cargo(models.TextChoices):
+        AYUDANTE = 'AYUDANTE', 'Ayudante'
+        OPERARIO = 'OPERARIO', 'Operario'
+        JEFE_BRIGADA = 'JEFE_BRIGADA', 'Jefe de Brigada'
+        ESPECIALISTA = 'ESPECIALISTA', 'Especialista en Obras de Ingeniería'
+        JEFE_DEPARTAMENTO = 'JEFE_DEPARTAMENTO', 'Jefe de Departamento'
+        JEFE_SERVICIOS = 'JEFE_SERVICIOS', 'Jefe de Servicios'
+
+    class NivelEscolar(models.TextChoices):
+        NOVENO = 'NOVENO', '9no grado'
+        DOCE = 'DOCE', '12 grado'
+        TECNICO = 'TECNICO', 'Técnico medio'
+        OBRERO = 'OBRERO', 'Obrero calificado'
+        UNIVERSITARIO = 'UNIVERSITARIO', 'Universitario'
+
     uo = models.ForeignKey(UnidadOrganizativa, on_delete=models.PROTECT, related_name='trabajadores')
+
+    # Identificación
+    codigo = models.CharField('Código', max_length=20)
     nombre = models.CharField('Nombre y apellidos', max_length=150)
-    cargo = models.CharField(max_length=100, blank=True)
-    # Opcional: muchos operarios nunca iniciarán sesión en el sistema
+    carnet_identidad = models.CharField(
+        'Carnet de identidad', max_length=11, unique=True,
+        validators=[RegexValidator(r'^\d{11}$', 'El carnet de identidad debe tener 11 dígitos.')],
+    )
+    nivel_escolar = models.CharField(max_length=15, choices=NivelEscolar.choices)
+    direccion = models.CharField('Dirección particular', max_length=255)
+
+    # Puesto
+    cargo = models.CharField(max_length=20, choices=Cargo.choices)
+    categoria = models.CharField('Categoría', max_length=1, choices=LETRAS)
+    departamento = models.CharField(max_length=100)
+    centro_principal = models.CharField('Centro principal', max_length=30)
+    centro_asociado = models.CharField('Centro asociado', max_length=30, blank=True)
+    numero_plaza = models.CharField('No. de plaza', max_length=20)
+    salario = models.DecimalField(max_digits=10, decimal_places=2)
+
+    # Licencia de conducción (el número y la categoría solo si tiene licencia)
+    licencia_conduccion = models.BooleanField('Licencia de conducción', default=False)
+    numero_licencia = models.CharField('No. de licencia', max_length=30, blank=True)
+    categoria_licencia = models.CharField('Categoría de la licencia', max_length=1, choices=LETRAS, blank=True)
+
+    # Contacto (opcional)
+    movil = models.CharField('Móvil', max_length=20, blank=True)
+    telefono_particular = models.CharField('Teléfono particular', max_length=20, blank=True)
+    telefono_oficina = models.CharField('Teléfono de oficina', max_length=20, blank=True)
+
+    # Opcional: solo si el trabajador también tiene usuario en el sistema
     usuario = models.OneToOneField(
         settings.AUTH_USER_MODEL, null=True, blank=True,
         on_delete=models.SET_NULL, related_name='trabajador',
@@ -19,9 +66,12 @@ class Trabajador(models.Model):
     class Meta:
         verbose_name_plural = 'Trabajadores'
         ordering = ['uo', 'nombre']
+        constraints = [
+            models.UniqueConstraint(fields=['uo', 'codigo'], name='trabajador_codigo_unico_por_uo')
+        ]
 
     def __str__(self):
-        return self.nombre
+        return f'{self.codigo} {self.nombre}'
 
 
 class EstadoDiario(models.Model):

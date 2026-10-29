@@ -299,3 +299,16 @@ input[type='date'] {
 .v-TALLER { background: #fff1cc; color: #7a5600; }
 .v-COMBUSTIBLE { background: #fde8d4; color: #9a3f00; }
 .v-OTRAS { background: #fdecea; color: var(--rojo); }
+
+/* ========== Ficha de trabajador ========== */
+input[type='number'] {
+  width: 100%; padding: 0.55rem; border: 1px solid var(--borde);
+  border-radius: 6px; font-size: 0.95rem; font-family: inherit;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem 1.2rem; }
+.campo-completo { grid-column: 1 / -1; }
+.form-seccion {
+  margin: 1.4rem 0 0.7rem; padding-bottom: 0.3rem; color: var(--azul);
+  border-bottom: 2px solid var(--verde); font-size: 0.95rem;
+}
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }

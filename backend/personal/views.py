@@ -10,6 +10,11 @@ from .models import Trabajador, EstadoDiario, Brigada, MiembroBrigada
 from .permissions import PersonalPermiso
 from .serializers import TrabajadorSerializer, BrigadaSerializer
 
+from accounts.models import Perfil
+from .serializers import TrabajadorSerializer, TrabajadorBasicoSerializer, BrigadaSerializer
+
+ROLES_DATOS_SENSIBLES = {Perfil.Rol.ESPECIALISTA, Perfil.Rol.JEFE_LOGISTICA}
+
 
 def de_su_uo(qs, request):
     """Cada usuario ve solo su UO (el nivel central ve todas)."""
@@ -18,7 +23,10 @@ def de_su_uo(qs, request):
 
 
 class TrabajadorViewSet(viewsets.ModelViewSet):
-    serializer_class = TrabajadorSerializer
+    def get_serializer_class(self):
+        if self.request.user.perfil.rol in ROLES_DATOS_SENSIBLES:
+            return TrabajadorSerializer
+        return TrabajadorBasicoSerializer
     permission_classes = [PersonalPermiso]
     http_method_names = ['get', 'post', 'patch', 'head', 'options']
 
@@ -97,7 +105,7 @@ class PaseListaView(APIView):
             filas.append({
                 'trabajador': t.id,
                 'nombre': t.nombre,
-                'cargo': t.cargo,
+                'cargo': t.get_cargo_display(),
                 'uo': t.uo.acronimo,
                 'estado': reg.estado if reg else EstadoDiario.Estado.TRABAJANDO,
                 'observacion': reg.observacion if reg else '',

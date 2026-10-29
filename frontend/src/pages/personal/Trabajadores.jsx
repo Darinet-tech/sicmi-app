@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import api, { textoError } from '../../api'
 import { useAuth } from '../../AuthContext'
+import FormTrabajador from './FormTrabajador'
 
 export default function Trabajadores() {
   const { usuario } = useAuth()
   const puedeEditar = usuario.rol === 'ESPECIALISTA'
 
   const [lista, setLista] = useState([])
-  const [nuevo, setNuevo] = useState({ nombre: '', cargo: '' })
-  const [editando, setEditando] = useState(null)
+  const [form, setForm] = useState(null) // null = cerrado, {} = nuevo, objeto = edición
+  const [buscar, setBuscar] = useState('')
   const [verInactivos, setVerInactivos] = useState(false)
   const [error, setError] = useState('')
 
@@ -16,30 +17,13 @@ export default function Trabajadores() {
     api.get('trabajadores/').then((r) => setLista(r.data)).catch((e) => setError(textoError(e)))
   }, [])
 
-  async function crear(e) {
-    e.preventDefault()
-    setError('')
-    try {
-      const r = await api.post('trabajadores/', nuevo)
-      setLista([...lista, r.data].sort((a, b) => a.nombre.localeCompare(b.nombre)))
-      setNuevo({ nombre: '', cargo: '' })
-    } catch (err) {
-      setError(textoError(err))
-    }
-  }
-
-  async function guardarEdicion() {
-    setError('')
-    try {
-      const r = await api.patch(`trabajadores/${editando.id}/`, {
-        nombre: editando.nombre,
-        cargo: editando.cargo,
-      })
-      setLista(lista.map((t) => (t.id === r.data.id ? r.data : t)))
-      setEditando(null)
-    } catch (err) {
-      setError(textoError(err))
-    }
+  function guardado(t) {
+    setLista((prev) =>
+      prev.some((x) => x.id === t.id)
+        ? prev.map((x) => (x.id === t.id ? t : x))
+        : [...prev, t].sort((a, b) => a.nombre.localeCompare(b.nombre))
+    )
+    setForm(null)
   }
 
   async function alternar(t) {
@@ -52,45 +36,53 @@ export default function Trabajadores() {
     }
   }
 
-  const visibles = lista.filter((t) => verInactivos || t.activo)
+  const q = buscar.toLowerCase()
+  const visibles = lista.filter(
+    (t) => (verInactivos || t.activo) && `${t.codigo} ${t.nombre}`.toLowerCase().includes(q)
+  )
 
   return (
     <>
-      {puedeEditar && (
-        <form className="tarjeta" onSubmit={crear}>
-          <h3>Agregar trabajador</h3>
-          <div className="dos-columnas">
-            <div>
-              <label style={{ marginTop: 0 }}>Nombre y apellidos</label>
-              <input type="text" value={nuevo.nombre} required
-                onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
-            </div>
-            <div>
-              <label style={{ marginTop: 0 }}>Cargo</label>
-              <input type="text" value={nuevo.cargo}
-                onChange={(e) => setNuevo({ ...nuevo, cargo: e.target.value })} />
-            </div>
-          </div>
-          <div className="fila-botones">
-            <button className="btn btn-verde">Agregar</button>
-          </div>
-        </form>
+      {puedeEditar && !form && (
+        <div className="fila-botones" style={{ marginTop: 0, marginBottom: '1rem' }}>
+          <button className="btn btn-verde" onClick={() => setForm({})}>+ Nuevo trabajador</button>
+        </div>
+      )}
+
+      {form && (
+        <FormTrabajador
+          key={form.id || 'nuevo'}
+          inicial={form}
+          onGuardado={guardado}
+          onCancelar={() => setForm(null)}
+        />
       )}
 
       {error && <div className="error">{error}</div>}
 
-      <label style={{ marginTop: 0, fontWeight: 400 }}>
-        <input type="checkbox" checked={verInactivos} onChange={(e) => setVerInactivos(e.target.checked)} />{' '}
-        Mostrar también los inactivos
-      </label>
+      <div className="tarjeta">
+        <div className="dos-columnas">
+          <div>
+            <label style={{ marginTop: 0 }}>Buscar por código o nombre</label>
+            <input type="text" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
+          </div>
+          <label style={{ fontWeight: 400, alignSelf: 'end' }}>
+            <input type="checkbox" checked={verInactivos} onChange={(e) => setVerInactivos(e.target.checked)} />{' '}
+            Mostrar también los inactivos
+          </label>
+        </div>
+      </div>
 
-      <div className="tabla-wrap" style={{ marginTop: '0.75rem' }}>
+      <div className="tabla-wrap">
         <table>
           <thead>
             <tr>
               {usuario.rol === 'CENTRAL' && <th>UO</th>}
+              <th>Código</th>
               <th>Nombre</th>
               <th>Cargo</th>
+              <th>Cat.</th>
+              <th>Departamento</th>
               <th>Estado</th>
               {puedeEditar && <th>Acciones</th>}
             </tr>
@@ -99,36 +91,23 @@ export default function Trabajadores() {
             {visibles.map((t) => (
               <tr key={t.id} style={{ opacity: t.activo ? 1 : 0.55 }}>
                 {usuario.rol === 'CENTRAL' && <td>{t.uo_acronimo}</td>}
-                {editando?.id === t.id ? (
-                  <>
-                    <td><input type="text" value={editando.nombre}
-                      onChange={(e) => setEditando({ ...editando, nombre: e.target.value })} /></td>
-                    <td><input type="text" value={editando.cargo}
-                      onChange={(e) => setEditando({ ...editando, cargo: e.target.value })} /></td>
-                    <td />
-                    <td>
-                      <button className="btn btn-verde" onClick={guardarEdicion}>Guardar</button>{' '}
-                      <button className="btn btn-gris" onClick={() => setEditando(null)}>Cancelar</button>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td>{t.nombre}</td>
-                    <td>{t.cargo}</td>
-                    <td>
-                      <span className={`etiqueta ${t.activo ? 'estado-CERRADA' : 'estado-CANCELADA'}`}>
-                        {t.activo ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    {puedeEditar && (
-                      <td>
-                        <button className="btn btn-gris" onClick={() => setEditando({ ...t })}>Editar</button>{' '}
-                        <button className="btn btn-gris" onClick={() => alternar(t)}>
-                          {t.activo ? 'Desactivar' : 'Activar'}
-                        </button>
-                      </td>
-                    )}
-                  </>
+                <td><strong>{t.codigo}</strong></td>
+                <td>{t.nombre}</td>
+                <td>{t.cargo_display}</td>
+                <td>{t.categoria}</td>
+                <td>{t.departamento}</td>
+                <td>
+                  <span className={`etiqueta ${t.activo ? 'estado-CERRADA' : 'estado-CANCELADA'}`}>
+                    {t.activo ? 'Activo' : 'Inactivo'}
+                  </span>
+                </td>
+                {puedeEditar && (
+                  <td>
+                    <button className="btn btn-gris" onClick={() => setForm(t)}>Editar</button>{' '}
+                    <button className="btn btn-gris" onClick={() => alternar(t)}>
+                      {t.activo ? 'Desactivar' : 'Activar'}
+                    </button>
+                  </td>
                 )}
               </tr>
             ))}
