@@ -10,6 +10,9 @@ import PersonalLayout from './pages/personal/PersonalLayout'
 import PaseLista from './pages/personal/PaseLista'
 import Trabajadores from './pages/personal/Trabajadores'
 import Brigadas from './pages/personal/Brigadas'
+import TransporteLayout from './pages/transporte/TransporteLayout'
+import ParteDiario from './pages/transporte/ParteDiario'
+import Vehiculos from './pages/transporte/Vehiculos'
 
 // Protege las pantallas: sin sesión, redirige al login
 function Privada({ children }) {
@@ -35,10 +38,15 @@ export default function App() {
         <Route path="/solicitudes/:id" element={<SolicitudDetalle />} />
         <Route path="/solicitudes/:id/editar" element={<SolicitudForm />} />
         <Route path="/personal" element={<PersonalLayout />}>
-        <Route index element={<Navigate to="pase-lista" replace />} />
-        <Route path="pase-lista" element={<PaseLista />} />
-        <Route path="trabajadores" element={<Trabajadores />} />
-        <Route path="brigadas" element={<Brigadas />} />
+          <Route index element={<Navigate to="pase-lista" replace />} />
+          <Route path="pase-lista" element={<PaseLista />} />
+          <Route path="trabajadores" element={<Trabajadores />} />
+          <Route path="brigadas" element={<Brigadas />} />
+        <Route path="/transporte" element={<TransporteLayout />}>
+          <Route index element={<Navigate to="parte-diario" replace />} />
+          <Route path="parte-diario" element={<ParteDiario />} />
+          <Route path="vehiculos" element={<Vehiculos />} />
+        </Route>
         </Route>
       </Route>
     </Routes>

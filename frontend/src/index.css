@@ -293,3 +293,9 @@ input[type='date'] {
 .btn-icono-gris:hover { background: #f4c7c3; color: var(--rojo); }
 .agregar-miembro { display: flex; gap: 0.5rem; margin-top: 0.9rem; }
 .agregar-miembro .btn { padding: 0.5rem 0.8rem; }
+
+/* ========== Estados de vehículos ========== */
+.v-DISPONIBLE { background: #d6f5db; color: #05600f; }
+.v-TALLER { background: #fff1cc; color: #7a5600; }
+.v-COMBUSTIBLE { background: #fde8d4; color: #9a3f00; }
+.v-OTRAS { background: #fdecea; color: var(--rojo); }
