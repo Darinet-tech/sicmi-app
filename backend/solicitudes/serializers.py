@@ -20,6 +20,14 @@ class SolicitudSerializer(serializers.ModelSerializer):
     estado_display = serializers.CharField(source='get_estado_display', read_only=True)
     historial = HistorialSerializer(many=True, read_only=True)
     acciones_permitidas = serializers.SerializerMethodField()
+    orden_id = serializers.SerializerMethodField()
+    orden_codigo = serializers.SerializerMethodField()
+
+    def get_orden_id(self, obj):
+        return obj.orden.id if hasattr(obj, 'orden') else None
+
+    def get_orden_codigo(self, obj):
+        return obj.orden.codigo if hasattr(obj, 'orden') else None
 
     class Meta:
         model = Solicitud
@@ -30,7 +38,7 @@ class SolicitudSerializer(serializers.ModelSerializer):
             'descripcion', 'foto',
             'solicitante', 'solicitante_nombre', 'estado', 'estado_display',
             'es_urgente', 'motivo_devolucion', 'creada', 'actualizada',
-            'historial', 'acciones_permitidas',
+            'historial', 'acciones_permitidas', 'orden_id', 'orden_codigo',
         ]
         # El cliente NO puede fijar estos campos: los pone el servidor
         read_only_fields = ['uo', 'solicitante', 'estado', 'es_urgente', 'motivo_devolucion']

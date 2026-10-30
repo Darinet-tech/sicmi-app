@@ -20,7 +20,7 @@ class CentroCostoSerializer(serializers.ModelSerializer):
 class DepartamentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Departamento
-        fields = ['id', 'nombre']
+        fields = ['id', 'acronimo', 'nombre']
 
 
 class CentroTelefonicoSerializer(serializers.ModelSerializer):

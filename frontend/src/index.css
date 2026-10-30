@@ -350,3 +350,22 @@ input[type='number'] {
   .hero { padding: 1.4rem; }
   .pagina-cab .acciones { margin-left: 0; }
 }
+
+/* ========== Órdenes de trabajo ========== */
+.eo-REGISTRADA { background: #dfe3fb; color: var(--azul); }
+.eo-EN_EJECUCION { background: #fff1cc; color: #7a5600; }
+.eo-ENTREGADA { background: #e0f2fe; color: #075985; }
+.eo-CONFORME { background: #f3e8ff; color: #6b21a8; }
+.eo-CERRADA { background: var(--verde); color: #04210a; }
+.eo-CANCELADA { background: #fdecea; color: var(--rojo); }
+.fila-alerta td { background: #fdecea; }
+
+.cadena-firmas { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.7rem; }
+.firma {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.8rem 1rem; border-radius: 12px;
+  background: #f7f8fa; border: 1px solid var(--borde); color: var(--gris);
+}
+.firma b { display: block; font-size: 0.88rem; color: var(--texto); }
+.firma small { font-size: 0.75rem; }
+.firma.hecha { background: #e6f7e9; border-color: var(--verde); color: #05600f; }

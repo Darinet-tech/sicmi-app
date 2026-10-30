@@ -110,7 +110,9 @@ export default function FormTrabajador({ inicial, onGuardado, onCancelar }) {
         >
           <select value={f.departamento} required onChange={(e) => poner('departamento', e.target.value)}>
             <option value="">-- Seleccione --</option>
-            {deptos.map((d) => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+            {deptos.map((d) => (
+              <option key={d.id} value={d.id}>{d.acronimo ? `${d.acronimo} - ${d.nombre}` : d.nombre}</option>
+            ))}
           </select>
         </Campo>
         <Campo etiqueta="No. de plaza">{texto('numero_plaza', { required: true, maxLength: 20 })}</Campo>

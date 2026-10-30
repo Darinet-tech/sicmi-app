@@ -32,9 +32,9 @@ class CentroCostoAdmin(admin.ModelAdmin):
 
 @admin.register(Departamento)
 class DepartamentoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'uo')
+    list_display = ('acronimo', 'nombre', 'uo')
     list_filter = ('uo',)
-
+    search_fields = ('acronimo', 'nombre')
 
 @admin.register(CentroTelefonico)
 class CentroTelefonicoAdmin(admin.ModelAdmin):

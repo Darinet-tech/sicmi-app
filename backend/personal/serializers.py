@@ -12,7 +12,7 @@ class TrabajadorBasicoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trabajador
         fields = ['id', 'codigo', 'nombre', 'cargo', 'cargo_display', 'categoria',
-                  'departamento_nombre', 'activo', 'uo_acronimo']
+                  'departamento_nombre', 'departamento_acronimo', 'activo', 'uo_acronimo']
 
 
 class TrabajadorSerializer(serializers.ModelSerializer):

@@ -1,5 +1,6 @@
 from django.db import models
 from accounts.models import UnidadOrganizativa
+from django.db.models import Q
 
 
 class GrupoGenerico(models.Model):
@@ -55,16 +56,22 @@ class CentroCosto(models.Model):
 class Departamento(models.Model):
     """Departamentos de la UO (para la ficha del trabajador)."""
     uo = models.ForeignKey(UnidadOrganizativa, on_delete=models.PROTECT, related_name='departamentos')
+    acronimo = models.CharField('Acrónimo', max_length=20)
     nombre = models.CharField(max_length=100)
 
     class Meta:
         ordering = ['uo', 'nombre']
         constraints = [
-            models.UniqueConstraint(fields=['uo', 'nombre'], name='departamento_unico_por_uo')
+            models.UniqueConstraint(fields=['uo', 'nombre'], name='departamento_unico_por_uo'),
+            # Un acrónimo no se repite dentro de la UO (los vacíos se ignoran)
+            models.UniqueConstraint(
+                fields=['uo', 'acronimo'], condition=~Q(acronimo=''),
+                name='departamento_acronimo_unico_por_uo',
+            ),
         ]
 
     def __str__(self):
-        return f'{self.uo.acronimo} · {self.nombre}'
+        return f'{self.acronimo} - {self.nombre}' if self.acronimo else self.nombre
 
 
 class CentroTelefonico(models.Model):

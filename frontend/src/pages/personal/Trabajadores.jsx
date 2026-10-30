@@ -108,7 +108,7 @@ export default function Trabajadores() {
                 </td>
                 <td data-label="Puesto">
                   <div>{t.cargo_display} · Cat. {t.categoria}</div>
-                  <Dato etq="Depto." v={t.departamento_nombre} />
+                  <Dato etq="Depto." v={t.departamento_acronimo || t.departamento_nombre} />
                   <Dato etq="Plaza" v={t.numero_plaza} />
                 </td>
                 <td data-label="Centros">

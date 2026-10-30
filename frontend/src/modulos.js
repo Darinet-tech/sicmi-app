@@ -24,7 +24,7 @@ export const MODULOS = [
     icono: FileCheck2,
     ruta: '/ordenes',
     roles: 'todos',
-    disponible: false,
+    disponible: true,
     fase: 'Fase 4',
   },
   {

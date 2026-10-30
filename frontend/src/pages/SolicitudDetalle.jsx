@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import api, { API_URL, textoError } from '../api'
 import { useAuth } from '../AuthContext'
 import { Etiqueta } from './Solicitudes'
+import GenerarOrden from './GenerarOrden'
 
 // Texto del botón según el estado al que llevaría la acción
 const BOTONES = {
@@ -102,6 +103,8 @@ export default function SolicitudDetalle() {
           </p>
         )}
       </div>
+
+      <GenerarOrden solicitud={s} />
 
       {(s.acciones_permitidas.length > 0 || puedeEditar) && (
         <div className="tarjeta">
