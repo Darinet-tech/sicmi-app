@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import models
 
 from accounts.models import UnidadOrganizativa
-from catalogos.models import Inmueble, CentroCosto
+from catalogos.models import Inmueble, CentroCosto, AreaSolicitante, Local, GrupoGenerico
 
 
 class Solicitud(models.Model):
@@ -21,8 +21,16 @@ class Solicitud(models.Model):
     uo = models.ForeignKey(UnidadOrganizativa, on_delete=models.PROTECT, related_name='solicitudes')
     inmueble = models.ForeignKey(Inmueble, on_delete=models.PROTECT, related_name='solicitudes')
     centro_costo = models.ForeignKey(CentroCosto, on_delete=models.PROTECT, related_name='solicitudes')
-    area_solicitante = models.CharField(max_length=150)
-    local = models.CharField('Local donde ocurre la incidencia', max_length=150)
+    area_solicitante = models.ForeignKey(AreaSolicitante, on_delete=models.PROTECT, related_name='solicitudes')
+    local = models.ForeignKey(
+        Local, on_delete=models.PROTECT, related_name='solicitudes',
+        verbose_name='Local donde ocurre la incidencia',
+    )
+    # Afectación: un grupo genérico, o texto libre si no está en la lista
+    afectacion = models.ForeignKey(
+        GrupoGenerico, null=True, blank=True, on_delete=models.PROTECT, related_name='solicitudes'
+    )
+    otra_afectacion = models.CharField(max_length=150, blank=True)
     descripcion = models.TextField('Descripción de las afectaciones')
     foto = models.ImageField(upload_to='solicitudes/', null=True, blank=True)
 

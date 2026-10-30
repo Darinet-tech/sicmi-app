@@ -17,7 +17,9 @@ class SolicitudViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = self.request.user.perfil
-        qs = Solicitud.objects.select_related('inmueble', 'solicitante').prefetch_related('historial')
+        qs = (Solicitud.objects
+            .select_related('inmueble', 'solicitante', 'area_solicitante', 'local', 'afectacion')
+            .prefetch_related('historial'))
         if perfil.es_central:
             return qs
         qs = qs.filter(uo=perfil.uo)

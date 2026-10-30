@@ -40,9 +40,18 @@ class Trabajador(models.Model):
     # Puesto
     cargo = models.CharField(max_length=20, choices=Cargo.choices)
     categoria = models.CharField('Categoría', max_length=1, choices=LETRAS)
-    departamento = models.CharField(max_length=100)
-    centro_principal = models.CharField('Centro principal', max_length=30)
-    centro_asociado = models.CharField('Centro asociado', max_length=30, blank=True)
+    departamento = models.ForeignKey(
+        'catalogos.Departamento', on_delete=models.PROTECT, related_name='trabajadores'
+    )
+    centro_principal = models.ForeignKey(
+        'catalogos.CentroTelefonico', on_delete=models.PROTECT, related_name='trabajadores_principal',
+        limit_choices_to={'tipo': 'PRINCIPAL'}, verbose_name='Centro principal',
+    )
+    centro_asociado = models.ForeignKey(
+        'catalogos.CentroTelefonico', null=True, blank=True, on_delete=models.PROTECT,
+        related_name='trabajadores_asociado', limit_choices_to={'tipo': 'ASOCIADO'},
+        verbose_name='Centro asociado',
+    )
     numero_plaza = models.CharField('No. de plaza', max_length=20)
     salario = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -69,6 +78,17 @@ class Trabajador(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['uo', 'codigo'], name='trabajador_codigo_unico_por_uo')
         ]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        errores = {}
+        if self.uo_id:
+            for campo in ('departamento', 'centro_principal', 'centro_asociado'):
+                obj = getattr(self, campo, None)
+                if obj is not None and obj.uo_id != self.uo_id:
+                    errores[campo] = 'Debe pertenecer a la misma UO del trabajador.'
+        if errores:
+            raise ValidationError(errores)
 
     def __str__(self):
         return f'{self.codigo} {self.nombre}'

@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from catalogos.models import CentroTelefonico
 from .models import Trabajador, Brigada
 
 
@@ -6,17 +7,24 @@ class TrabajadorBasicoSerializer(serializers.ModelSerializer):
     """Datos no sensibles: para los roles que no deben ver salario, carnet, etc."""
     cargo_display = serializers.CharField(source='get_cargo_display', read_only=True)
     uo_acronimo = serializers.CharField(source='uo.acronimo', read_only=True)
+    departamento_nombre = serializers.CharField(source='departamento.nombre', read_only=True)
 
     class Meta:
         model = Trabajador
         fields = ['id', 'codigo', 'nombre', 'cargo', 'cargo_display', 'categoria',
-                  'departamento', 'activo', 'uo_acronimo']
+                  'departamento_nombre', 'activo', 'uo_acronimo']
 
 
 class TrabajadorSerializer(serializers.ModelSerializer):
     """Ficha completa."""
     cargo_display = serializers.CharField(source='get_cargo_display', read_only=True)
+    nivel_escolar_display = serializers.CharField(source='get_nivel_escolar_display', read_only=True)
     uo_acronimo = serializers.CharField(source='uo.acronimo', read_only=True)
+    departamento_nombre = serializers.CharField(source='departamento.nombre', read_only=True)
+    centro_principal_nombre = serializers.CharField(source='centro_principal.codigo', read_only=True)
+    centro_asociado_nombre = serializers.CharField(
+        source='centro_asociado.codigo', read_only=True, default=None
+    )
 
     class Meta:
         model = Trabajador
@@ -33,8 +41,21 @@ class TrabajadorSerializer(serializers.ModelSerializer):
         return codigo
 
     def validate(self, datos):
+        uo = self.context['request'].user.perfil.uo
+
         def valor(campo):
             return datos.get(campo, getattr(self.instance, campo, None))
+
+        # Los catálogos elegidos deben ser de la UO del usuario
+        for campo in ('departamento', 'centro_principal', 'centro_asociado'):
+            obj = datos.get(campo)
+            if obj is not None and obj.uo_id != uo.id:
+                raise serializers.ValidationError({campo: 'No pertenece a su UO.'})
+        cp, ca = datos.get('centro_principal'), datos.get('centro_asociado')
+        if cp is not None and cp.tipo != CentroTelefonico.Tipo.PRINCIPAL:
+            raise serializers.ValidationError({'centro_principal': 'Seleccione un centro telefónico principal.'})
+        if ca is not None and ca.tipo != CentroTelefonico.Tipo.ASOCIADO:
+            raise serializers.ValidationError({'centro_asociado': 'Seleccione un centro telefónico asociado.'})
 
         # Licencia: si tiene, el número y la categoría son obligatorios; si no, se vacían
         if valor('licencia_conduccion'):

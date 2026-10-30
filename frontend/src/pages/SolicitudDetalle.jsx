@@ -89,8 +89,9 @@ export default function SolicitudDetalle() {
         <h3>Datos de la solicitud</h3>
         <dl className="datos">
           <dt>Inmueble</dt><dd>{s.inmueble_nombre}</dd>
-          <dt>Área solicitante</dt><dd>{s.area_solicitante}</dd>
-          <dt>Local</dt><dd>{s.local}</dd>
+          <dt>Área solicitante</dt><dd>{s.area_nombre}</dd>
+          <dt>Local</dt><dd>{s.local_nombre}</dd>
+          <dt>Afectación</dt><dd>{s.afectacion_nombre || s.otra_afectacion}</dd>
           <dt>Solicitante</dt><dd>{s.solicitante_nombre}</dd>
           <dt>Fecha</dt><dd>{new Date(s.creada).toLocaleString('es')}</dd>
           <dt>Descripción</dt><dd style={{ whiteSpace: 'pre-wrap' }}>{s.descripcion}</dd>

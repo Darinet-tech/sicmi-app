@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ClipboardList } from 'lucide-react'
 import api, { textoError } from '../api'
 import { useAuth } from '../AuthContext'
-import { ClipboardList } from 'lucide-react'
 import PaginaModulo from '../PaginaModulo'
 
 export const ESTADOS = {
@@ -52,11 +52,7 @@ export default function Solicitudes() {
     >
       <div className="tarjeta">
         <label style={{ marginTop: 0 }}>Filtrar por estado</label>
-        <select
-          value={filtro}
-          onChange={(e) => setFiltro(e.target.value)}
-          style={{ maxWidth: 260 }}
-        >
+        <select value={filtro} onChange={(e) => setFiltro(e.target.value)} style={{ maxWidth: 260 }}>
           <option value="">Todos</option>
           {Object.entries(ESTADOS).map(([valor, texto]) => (
             <option key={valor} value={valor}>{texto}</option>
@@ -65,39 +61,46 @@ export default function Solicitudes() {
       </div>
 
       {error && <div className="error">{error}</div>}
-
       {cargando ? (
         <p>Cargando...</p>
       ) : visibles.length === 0 ? (
         <div className="tarjeta">No hay solicitudes para mostrar.</div>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>No.</th>
-              <th>Inmueble</th>
-              <th>Local</th>
-              <th>Solicitante</th>
-              <th>Fecha</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibles.map((s) => (
-              <tr key={s.id}>
-                <td><Link to={`/solicitudes/${s.id}`}>#{s.id}</Link></td>
-                <td>{s.inmueble_nombre}</td>
-                <td>{s.local}</td>
-                <td>{s.solicitante_nombre}</td>
-                <td>{new Date(s.creada).toLocaleDateString('es')}</td>
-                <td>
-                  <Etiqueta estado={s.estado} />
-                  {s.es_urgente && <span className="etiqueta urgente">URGENTE</span>}
-                </td>
+        <div className="tabla-wrap sin-marco">
+          <table className="tabla-ficha">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Inmueble / local</th>
+                <th>Afectación</th>
+                <th>Solicitante</th>
+                <th>Fecha</th>
+                <th>Estado</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {visibles.map((s) => (
+                <tr key={s.id}>
+                  <td data-label="No."><Link to={`/solicitudes/${s.id}`}>#{s.id}</Link></td>
+                  <td data-label="Inmueble / local">
+                    <div>{s.inmueble_nombre}</div>
+                    <div className="sub">{s.local_nombre}</div>
+                  </td>
+                  <td data-label="Afectación">{s.afectacion_nombre || s.otra_afectacion}</td>
+                  <td data-label="Solicitante">
+                    <div>{s.solicitante_nombre}</div>
+                    <div className="sub">{s.area_nombre}</div>
+                  </td>
+                  <td data-label="Fecha">{new Date(s.creada).toLocaleDateString('es')}</td>
+                  <td data-label="Estado">
+                    <Etiqueta estado={s.estado} />
+                    {s.es_urgente && <span className="etiqueta urgente">URGENTE</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </PaginaModulo>
   )
