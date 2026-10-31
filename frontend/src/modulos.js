@@ -51,9 +51,8 @@ export const MODULOS = [
     descripcion: 'Solicitudes de recursos, existencias del almacén y sobregiros.',
     icono: Package,
     ruta: '/recursos',
-    roles: ['ESPECIALISTA', 'JEFE_BRIGADA', 'BALANCISTA', 'JEFE_LOGISTICA', 'CENTRAL'],
-    disponible: false,
-    fase: 'Fase 4',
+    roles: ['ESPECIALISTA', 'JEFE_BRIGADA', 'BALANCISTA', 'JEFE_LOGISTICA', 'DIRECTOR_UO', 'CENTRAL'],
+    disponible: true,
   },
   {
     id: 'plan',

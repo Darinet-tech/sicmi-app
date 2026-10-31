@@ -8,6 +8,7 @@ from transporte.models import EstadoVehiculo
 from transporte.utils import estado_vehiculo
 from .models import Orden
 from .reglas import acciones_permitidas, proxima_firma
+from recursos.models import LineaRecurso, SolicitudRecurso
 
 ROLES = dict(Perfil.Rol.choices)
 
@@ -30,6 +31,31 @@ class OrdenSerializer(serializers.ModelSerializer):
     proxima_firma = serializers.SerializerMethodField()
     historial = serializers.SerializerMethodField()
     acciones = serializers.SerializerMethodField()
+    materiales = serializers.SerializerMethodField()
+    valor_total = serializers.SerializerMethodField()
+    recursos = serializers.SerializerMethodField()
+
+    def _despachados(self, obj):
+        return (LineaRecurso.objects
+                .filter(solicitud__orden=obj, solicitud__estado=SolicitudRecurso.Estado.DESPACHADA,
+                        cantidad_despachada__gt=0)
+                .select_related('material', 'solicitud'))
+
+    def get_materiales(self, obj):
+        return [
+            {'vale': l.solicitud.vale_numero, 'codigo': l.material.codigo_sap,
+             'descripcion': l.material.descripcion, 'um': l.material.unidad_medida,
+             'cantidad': l.cantidad_despachada, 'precio': l.precio_unitario,
+             'importe': round(l.cantidad_despachada * l.precio_unitario, 2)}
+            for l in self._despachados(obj)
+        ]
+
+    def get_valor_total(self, obj):
+        return round(sum((l.cantidad_despachada * l.precio_unitario for l in self._despachados(obj)), 0), 2)
+
+    def get_recursos(self, obj):
+        return [{'id': s.id, 'codigo': s.codigo, 'estado': s.get_estado_display()}
+                for s in obj.solicitudes_recursos.all()]
 
     class Meta:
         model = Orden
@@ -40,6 +66,7 @@ class OrdenSerializer(serializers.ModelSerializer):
             'vehiculo', 'vehiculo_texto', 'descripcion_trabajos', 'incidencias',
             'fecha_solicitud', 'fecha_cierre', 'creada',
             'brigadas', 'participantes', 'firmas', 'proxima_firma', 'historial', 'acciones',
+            'materiales', 'valor_total', 'recursos'
         ]
         read_only_fields = fields
 

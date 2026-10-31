@@ -44,11 +44,11 @@ INSTALLED_APPS = [
     # Nuestras apps
     'accounts',
     'catalogos',
-    'solicitudes',
-    'recursos',
+    'solicitudes',    
     'personal',
     'transporte',
     'ordenes',
+    'recursos',
 ]
 
 MIDDLEWARE = [

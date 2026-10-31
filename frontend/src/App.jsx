@@ -15,6 +15,12 @@ import ParteDiario from './pages/transporte/ParteDiario'
 import Vehiculos from './pages/transporte/Vehiculos'
 import OrdenesLista from './pages/ordenes/OrdenesLista'
 import OrdenDetalle from './pages/ordenes/OrdenDetalle'
+import RecursosLayout from './pages/recursos/RecursosLayout'
+import ListaRecursos from './pages/recursos/ListaRecursos'
+import NuevaSolicitudRecursos from './pages/recursos/NuevaSolicitudRecursos'
+import DetalleRecurso from './pages/recursos/DetalleRecurso'
+import Existencias from './pages/recursos/Existencias'
+import Presupuesto from './pages/recursos/Presupuesto'
 
 // Protege las pantallas: sin sesión, redirige al login
 function Privada({ children }) {
@@ -53,6 +59,15 @@ export default function App() {
         </Route>
         <Route path="/ordenes" element={<OrdenesLista />} />
         <Route path="/ordenes/:id" element={<OrdenDetalle />} />
+        <Route path="/recursos" element={<RecursosLayout />}>
+          <Route index element={<Navigate to="solicitudes" replace />} />
+          <Route path="solicitudes" element={<ListaRecursos />} />
+          <Route path="solicitudes/nueva" element={<NuevaSolicitudRecursos />} />
+          <Route path="solicitudes/:id" element={<DetalleRecurso />} />
+          <Route path="existencias" element={<Existencias />} />
+          <Route path="presupuesto" element={<Presupuesto />} />
+        </Route>
+
       </Route>
     </Routes>
   )

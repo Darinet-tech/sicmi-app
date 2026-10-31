@@ -17,6 +17,7 @@ from .models import Orden, ParticipanteOrden, Firma, HistorialOrden
 from .reglas import acciones_permitidas
 from .serializers import OrdenSerializer, OrdenEdicionSerializer
 from .servicios import agregar_brigada_a_orden, cerrar_brigada
+from recursos.models import SolicitudRecurso
 
 E = Orden.Estado
 
@@ -158,6 +159,11 @@ class OrdenViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Ge
             return error('Indique el motivo de la cancelación.')
         with transaction.atomic():
             self._cambiar(orden, E.CANCELADA, f'Orden cancelada: {motivo}')
+            SolicitudRecurso.objects.filter(
+                orden=orden,
+                estado__in=[SolicitudRecurso.Estado.SOLICITADA, SolicitudRecurso.Estado.PENDIENTE_SOBREGIRO,
+                            SolicitudRecurso.Estado.VERIFICADA, SolicitudRecurso.Estado.AUTORIZADA],
+            ).update(estado=SolicitudRecurso.Estado.CANCELADA, motivo='La orden de trabajo fue cancelada')
             if orden.solicitud_id:
                 sol = orden.solicitud
                 anterior = sol.estado

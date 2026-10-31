@@ -6,6 +6,7 @@ import PaginaModulo from '../../PaginaModulo'
 import { ESTADOS_TRABAJADOR } from '../personal/estados'
 import { CADENA_FIRMAS } from './estados'
 import { EtiquetaOrden } from './OrdenesLista'
+import { dinero } from '../recursos/estados'
 
 const fecha = (f) => (f ? new Date(f + 'T00:00:00').toLocaleDateString('es') : '—')
 
@@ -276,6 +277,52 @@ export default function OrdenDetalle() {
                 onChange={(e) => setNuevoPart({ ...nuevoPart, motivo: e.target.value })} />
               <button className="btn btn-verde" onClick={agregarParticipante} disabled={ocupado}>Agregar</button>
             </div>
+          </div>
+        )}
+      </div>
+
+      <div className="tarjeta">
+        <h3>Materiales utilizados</h3>
+        {o.materiales.length === 0 ? (
+          <p style={{ color: 'var(--gris)', marginTop: 0 }}>Todavía no se han despachado materiales para esta orden.</p>
+        ) : (
+          <div className="tabla-wrap">
+            <table>
+              <thead>
+                <tr><th>No. vale</th><th>Descripción</th><th>UM</th><th>Cantidad</th><th>Precio</th><th>Importe</th></tr>
+              </thead>
+              <tbody>
+                {o.materiales.map((m, i) => (
+                  <tr key={i}>
+                    <td>{m.vale}</td>
+                    <td>{m.codigo} · {m.descripcion}</td>
+                    <td>{m.um}</td>
+                    <td>{m.cantidad}</td>
+                    <td>{dinero(m.precio)}</td>
+                    <td>{dinero(m.importe)}</td>
+                  </tr>
+                ))}
+                <tr className="total-fila">
+                  <td colSpan={5}>Valor total (CUP)</td>
+                  <td>{dinero(o.valor_total)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+        {o.recursos.length > 0 && (
+          <p style={{ marginBottom: 0 }}>
+            <span className="sub">Solicitudes de recursos:</span>{' '}
+            {o.recursos.map((r) => (
+              <span key={r.id} style={{ marginRight: '0.8rem' }}>
+                {editable ? <Link to={`/recursos/solicitudes/${r.id}`}>{r.codigo}</Link> : r.codigo} ({r.estado})
+              </span>
+            ))}
+          </p>
+        )}
+        {editable && (
+          <div className="fila-botones">
+            <Link className="btn btn-verde" to={`/recursos/solicitudes/nueva?orden=${o.id}`}>Solicitar recursos</Link>
           </div>
         )}
       </div>
