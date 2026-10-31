@@ -9,6 +9,7 @@ from transporte.utils import estado_vehiculo
 from .models import Orden
 from .reglas import acciones_permitidas, proxima_firma
 from recursos.models import LineaRecurso, SolicitudRecurso
+from recursos.servicios import materiales_de_orden
 
 ROLES = dict(Perfil.Rol.choices)
 
@@ -42,16 +43,10 @@ class OrdenSerializer(serializers.ModelSerializer):
                 .select_related('material', 'solicitud'))
 
     def get_materiales(self, obj):
-        return [
-            {'vale': l.solicitud.vale_numero, 'codigo': l.material.codigo_sap,
-             'descripcion': l.material.descripcion, 'um': l.material.unidad_medida,
-             'cantidad': l.cantidad_despachada, 'precio': l.precio_unitario,
-             'importe': round(l.cantidad_despachada * l.precio_unitario, 2)}
-            for l in self._despachados(obj)
-        ]
+        return materiales_de_orden(obj)
 
     def get_valor_total(self, obj):
-        return round(sum((l.cantidad_despachada * l.precio_unitario for l in self._despachados(obj)), 0), 2)
+        return round(sum((f['importe'] for f in materiales_de_orden(obj)), 0), 2)
 
     def get_recursos(self, obj):
         return [{'id': s.id, 'codigo': s.codigo, 'estado': s.get_estado_display()}

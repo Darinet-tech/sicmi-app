@@ -295,7 +295,10 @@ export default function OrdenDetalle() {
                 {o.materiales.map((m, i) => (
                   <tr key={i}>
                     <td>{m.vale}</td>
-                    <td>{m.codigo} · {m.descripcion}</td>
+                    <td>
+                      {m.codigo} · {m.descripcion}
+                      {m.origen && <div className="sub">{m.origen}</div>}
+                    </td>
                     <td>{m.um}</td>
                     <td>{m.cantidad}</td>
                     <td>{dinero(m.precio)}</td>

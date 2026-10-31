@@ -21,6 +21,7 @@ import NuevaSolicitudRecursos from './pages/recursos/NuevaSolicitudRecursos'
 import DetalleRecurso from './pages/recursos/DetalleRecurso'
 import Existencias from './pages/recursos/Existencias'
 import Presupuesto from './pages/recursos/Presupuesto'
+import SobrantesCustodia from './pages/recursos/SobrantesCustodia'
 
 // Protege las pantallas: sin sesión, redirige al login
 function Privada({ children }) {
@@ -66,6 +67,7 @@ export default function App() {
           <Route path="solicitudes/:id" element={<DetalleRecurso />} />
           <Route path="existencias" element={<Existencias />} />
           <Route path="presupuesto" element={<Presupuesto />} />
+          <Route path="sobrantes" element={<SobrantesCustodia />} />
         </Route>
 
       </Route>

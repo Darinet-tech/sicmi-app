@@ -10,12 +10,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import Perfil, UnidadOrganizativa
-from ordenes.models import Orden
-from .models import Almacen, Existencia, LineaRecurso, Sobregiro, SolicitudRecurso
+from ordenes.models import Orden, HistorialOrden
+from .models import Almacen, Existencia, LineaRecurso, Sobrante, Sobregiro, SolicitudRecurso
 from .permissions import PermisoPresupuesto, PermisoRecursos
 from .reglas import ROLES_CREAN, acciones_recurso
 from .serializers import AlmacenSerializer, salida, salida_sobregiro
-from .servicios import faltante, resumen_presupuesto, total_estimado
+from .servicios import faltante, q2, resumen_presupuesto, total_estimado
 
 S = SolicitudRecurso.Estado
 R = Perfil.Rol
@@ -57,7 +57,7 @@ class SolicitudRecursoViewSet(viewsets.ViewSet):
         qs = (SolicitudRecurso.objects
               .select_related('uo', 'orden', 'orden__inmueble', 'orden__centro_costo', 'almacen',
                               'solicitada_por', 'verificada_por', 'autorizada_por', 'despachada_por')
-              .prefetch_related('lineas__material'))
+              .prefetch_related('lineas__material', 'lineas__sobrantes'))
         perfil = request.user.perfil
         return qs if perfil.es_central else qs.filter(uo=perfil.uo)
 
@@ -231,6 +231,70 @@ class SolicitudRecursoViewSet(viewsets.ViewSet):
             return error(str(e))
         return self._respuesta(request, pk)
 
+    def _nota_orden(self, orden, texto):
+        HistorialOrden.objects.create(
+            orden=orden, estado_anterior=orden.estado, estado_nuevo=orden.estado,
+            usuario=self.request.user, comentario=texto,
+        )
+
+    @action(detail=True, methods=['post'])
+    def registrar_sobrante(self, request, pk=None):
+        sol = self._obtener(request, pk)
+        if 'sobrante' not in acciones_recurso(sol, request.user):
+            return denegado()
+        linea = sol.lineas.filter(pk=entero(request.data.get('linea'))).first()
+        if linea is None:
+            return error('Seleccione el material.')
+        try:
+            cantidad = a_decimal(request.data.get('cantidad'))
+        except ValueError:
+            return error('La cantidad no es un número.')
+        if cantidad <= 0:
+            return error('La cantidad debe ser mayor que cero.')
+
+        justificado = sum((s.cantidad for s in linea.sobrantes.all()), Decimal('0'))
+        restante = linea.cantidad_despachada - justificado
+        if cantidad > restante:
+            return error(f'{linea.material.codigo_sap}: solo quedan {restante} por justificar.')
+
+        destino = request.data.get('destino')
+        if destino not in Sobrante.Destino.values:
+            return error('Indique si el sobrante se devuelve al almacén o queda en custodia.')
+        devolucion = destino == Sobrante.Destino.DEVOLUCION
+        vale = str(request.data.get('vale_devolucion', '')).strip()
+        if devolucion and not vale:
+            return error('Indique el número del vale de devolución.')
+
+        with transaction.atomic():
+            Sobrante.objects.create(
+                linea=linea, cantidad=cantidad, destino=destino,
+                vale_devolucion=vale if devolucion else '', registrado_por=request.user,
+            )
+            if devolucion:
+                ex, _ = Existencia.objects.select_for_update().get_or_create(
+                    almacen=sol.almacen, material=linea.material,
+                    defaults={'cantidad_libre': Decimal('0'), 'valor_unitario': linea.precio_unitario},
+                )
+                ex.cantidad_libre += cantidad
+                ex.save()
+                texto = (f'Sobrante: {cantidad} de {linea.material.codigo_sap} devuelto al almacén '
+                         f'(vale de devolución {vale}). Informado al Jefe de Grupo y al Especialista.')
+            else:
+                texto = (f'Sobrante: {cantidad} de {linea.material.codigo_sap} queda en custodia '
+                         f'del Jefe de Brigada para su uso en otros servicios.')
+            self._nota_orden(sol.orden, texto)
+        return self._respuesta(request, pk)
+
+    @action(detail=True, methods=['post'])
+    def revisar_sobrantes(self, request, pk=None):
+        sol = self._obtener(request, pk)
+        if 'revisar_sobrantes' not in acciones_recurso(sol, request.user):
+            return denegado()
+        sol.sobrantes_revisados = True
+        sol.save()
+        self._nota_orden(sol.orden, f'Sobrantes de {sol.codigo} verificados: no hay más sobrantes.')
+        return self._respuesta(request, pk) 
+
 
 class SobregiroViewSet(viewsets.ViewSet):
     permission_classes = [PermisoPresupuesto]
@@ -340,3 +404,53 @@ class AlmacenViewSet(viewsets.ReadOnlyModelViewSet):
         perfil = self.request.user.perfil
         qs = Almacen.objects.select_related('uo')
         return qs if perfil.es_central else qs.filter(uo=perfil.uo)
+
+class SobranteCustodiaViewSet(viewsets.ViewSet):
+    """Sobrantes que quedaron en custodia del Jefe de Brigada y se pueden usar en otras órdenes."""
+    permission_classes = [PermisoRecursos]
+
+    def _qs(self, request):
+        qs = (Sobrante.objects.filter(destino=Sobrante.Destino.CUSTODIA)
+              .select_related('linea__material', 'linea__solicitud__orden', 'orden_destino', 'registrado_por'))
+        perfil = request.user.perfil
+        return qs if perfil.es_central else qs.filter(linea__solicitud__uo=perfil.uo)
+
+    def list(self, request):
+        qs = self._qs(request)
+        if request.query_params.get('pendientes'):
+            qs = qs.filter(orden_destino__isnull=True)
+        return Response([
+            {'id': s.id, 'codigo_sap': s.linea.material.codigo_sap, 'descripcion': s.linea.material.descripcion,
+             'um': s.linea.material.unidad_medida, 'cantidad': s.cantidad,
+             'precio': s.linea.precio_unitario, 'importe': q2(s.cantidad * s.linea.precio_unitario),
+             'vale': s.linea.solicitud.vale_numero, 'orden_origen': s.linea.solicitud.orden.codigo,
+             'orden_destino': s.orden_destino.codigo if s.orden_destino_id else None,
+             'registrado_por': (s.registrado_por.get_full_name() or s.registrado_por.username)}
+            for s in qs
+        ])
+
+    @action(detail=True, methods=['post'])
+    def asignar(self, request, pk=None):
+        if request.user.perfil.rol not in ROLES_CREAN:
+            return error('Solo el Especialista o el Jefe de Brigada asignan sobrantes.', status.HTTP_403_FORBIDDEN)
+        s = get_object_or_404(self._qs(request).filter(orden_destino__isnull=True), pk=pk)
+        origen = s.linea.solicitud.orden
+        destino = (Orden.objects
+                   .filter(pk=entero(request.data.get('orden')), uo=origen.uo,
+                           estado__in=[Orden.Estado.REGISTRADA, Orden.Estado.EN_EJECUCION])
+                   .exclude(pk=origen.pk).first())
+        if destino is None:
+            return error('Seleccione otra orden de su UO que esté abierta.')
+        with transaction.atomic():
+            s.orden_destino = destino
+            s.asignado_por = request.user
+            s.fecha_asignacion = timezone.now()
+            s.save()
+            texto = f'Sobrante de {s.linea.material.codigo_sap} ({s.cantidad}) '
+            HistorialOrden.objects.create(
+                orden=destino, estado_anterior=destino.estado, estado_nuevo=destino.estado,
+                usuario=request.user, comentario=texto + f'recibido de la orden {origen.codigo} (vale {s.linea.solicitud.vale_numero}).')
+            HistorialOrden.objects.create(
+                orden=origen, estado_anterior=origen.estado, estado_nuevo=origen.estado,
+                usuario=request.user, comentario=texto + f'utilizado en la orden {destino.codigo}.')
+        return Response({'detalle': f'Sobrante asignado a la orden {destino.codigo}.'})

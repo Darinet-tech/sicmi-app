@@ -3,6 +3,7 @@ import { ClipboardList, Package, BarChart3, Lock } from 'lucide-react'
 import PaginaModulo from '../../PaginaModulo'
 import { useAuth } from '../../AuthContext'
 import { MODULOS, tieneAcceso } from '../../modulos'
+import { FileCheck } from 'lucide-react';
 
 const VE_PRESUPUESTO = ['ESPECIALISTA', 'JEFE_LOGISTICA', 'DIRECTOR_UO', 'CENTRAL']
 
@@ -21,6 +22,7 @@ export default function RecursosLayout() {
   const secciones = [
     { a: 'solicitudes', texto: 'Solicitudes de recursos', icono: ClipboardList },
     { a: 'existencias', texto: 'Existencias', icono: Package },
+    { a: 'sobrantes', texto: 'Sobrantes en custodia', icono: FileCheck2 },
     ...(VE_PRESUPUESTO.includes(usuario.rol)
       ? [{ a: 'presupuesto', texto: 'Presupuesto y sobregiros', icono: BarChart3 }]
       : []),

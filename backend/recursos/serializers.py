@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from .models import Almacen, Existencia, SolicitudRecurso
+from .models import Almacen, Existencia, Sobrante, SolicitudRecurso
 from .reglas import ABIERTAS, acciones_recurso
 from .servicios import q2, resumen_presupuesto
 
@@ -24,21 +24,33 @@ class AlmacenSerializer(serializers.ModelSerializer):
 def salida(sol, user, detalle=True):
     """Convierte una solicitud de recursos en un diccionario listo para enviar al frontend."""
     despachada = sol.estado == S.DESPACHADA
-    filas, total = [], Decimal('0')
+    filas, total, sobrantes = [], Decimal('0'), []
     for l in sol.lineas.all():
-        base = l.cantidad_despachada if despachada else l.cantidad
+        devuelta = sum((x.cantidad for x in l.sobrantes.all() if x.destino == Sobrante.Destino.DEVOLUCION), Decimal('0'))
+        custodia = sum((x.cantidad for x in l.sobrantes.all() if x.destino == Sobrante.Destino.CUSTODIA), Decimal('0'))
+        utilizada = l.cantidad_despachada - devuelta - custodia
+        base = utilizada if despachada else l.cantidad
         importe = base * l.precio_unitario
         total += importe
         fila = {
             'id': l.id, 'material': l.material_id, 'codigo_sap': l.material.codigo_sap,
             'descripcion': l.material.descripcion, 'um': l.material.unidad_medida,
             'cantidad': l.cantidad, 'cantidad_despachada': l.cantidad_despachada,
+            'devuelta': devuelta, 'custodia': custodia, 'utilizada': utilizada,
             'precio_unitario': l.precio_unitario, 'importe': q2(importe),
         }
         if detalle and sol.estado in ABIERTAS:
             fila['stock'] = (Existencia.objects.filter(almacen_id=sol.almacen_id, material_id=l.material_id)
                              .values_list('cantidad_libre', flat=True).first() or Decimal('0'))
         filas.append(fila)
+        for x in l.sobrantes.all():
+            sobrantes.append({
+                'id': x.id, 'codigo_sap': l.material.codigo_sap, 'descripcion': l.material.descripcion,
+                'cantidad': x.cantidad, 'destino': x.destino, 'destino_display': x.get_destino_display(),
+                'vale_devolucion': x.vale_devolucion,
+                'orden_destino': x.orden_destino.codigo if x.orden_destino_id else None,
+                'registrado_por': nombre(x.registrado_por), 'fecha': x.fecha,
+            })
 
     datos = {
         'id': sol.id, 'codigo': sol.codigo, 'estado': sol.estado,
@@ -51,7 +63,8 @@ def salida(sol, user, detalle=True):
         'autorizada_por': nombre(sol.autorizada_por), 'fecha_autorizacion': sol.fecha_autorizacion,
         'despachada_por': nombre(sol.despachada_por), 'fecha_despacho': sol.fecha_despacho,
         'vale_numero': sol.vale_numero, 'motivo': sol.motivo,
-        'total': q2(total), 'lineas': filas,
+        'sobrantes_revisados': sol.sobrantes_revisados,
+        'total': q2(total), 'lineas': filas, 'sobrantes': sobrantes,
     }
     if detalle:
         datos['presupuesto'] = resumen_presupuesto(sol.uo, sol.anio)

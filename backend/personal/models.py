@@ -17,6 +17,7 @@ class Trabajador(models.Model):
         ESPECIALISTA = 'ESPECIALISTA', 'Especialista en Obras de Ingeniería'
         JEFE_DEPARTAMENTO = 'JEFE_DEPARTAMENTO', 'Jefe de Departamento'
         JEFE_SERVICIOS = 'JEFE_SERVICIOS', 'Jefe de Servicios'
+        BALANCISTA_DISTRIBUIDOR = 'BALANCISTA_DISTRIBUIDOR', 'Balancista Distribuidor'
 
     class NivelEscolar(models.TextChoices):
         NOVENO = 'NOVENO', '9no grado'
@@ -38,7 +39,7 @@ class Trabajador(models.Model):
     direccion = models.CharField('Dirección particular', max_length=255)
 
     # Puesto
-    cargo = models.CharField(max_length=20, choices=Cargo.choices)
+    cargo = models.CharField(max_length=30, choices=Cargo.choices)
     categoria = models.CharField('Categoría', max_length=1, choices=LETRAS)
     departamento = models.ForeignKey(
         'catalogos.Departamento', on_delete=models.PROTECT, related_name='trabajadores'

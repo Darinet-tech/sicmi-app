@@ -6,6 +6,8 @@ import { dinero } from './estados'
 import { EtiquetaRecurso } from './ListaRecursos'
 
 const fecha = (f) => (f ? new Date(f).toLocaleString('es') : '')
+const num = (v) => Number(v || 0)
+const SOBRANTE_VACIO = { linea: null, cantidad: '', destino: 'DEVOLUCION', vale_devolucion: '' }
 
 export default function DetalleRecurso() {
   const { id } = useParams()
@@ -16,6 +18,7 @@ export default function DetalleRecurso() {
   const [motivo, setMotivo] = useState('')
   const [vale, setVale] = useState('')
   const [desp, setDesp] = useState({})
+  const [sob, setSob] = useState(null) // formulario de sobrante abierto
 
   function cargar(datos) {
     setS(datos)
@@ -36,6 +39,7 @@ export default function DetalleRecurso() {
       cargar(r.data)
       setModo(null)
       setMotivo('')
+      setSob(null)
     } catch (e) {
       setError(textoError(e))
     } finally {
@@ -48,7 +52,13 @@ export default function DetalleRecurso() {
   const acc = s.acciones
   const p = s.presupuesto
   const abierta = ['SOLICITADA', 'PENDIENTE_SOBREGIRO', 'VERIFICADA', 'AUTORIZADA'].includes(s.estado)
+  const despachada = s.estado === 'DESPACHADA'
   const despachando = modo === 'despachar'
+  const puedeSobrante = acc.includes('sobrante')
+  const accionesGestion = acc.filter((a) => a !== 'sobrante')
+
+  const antesImporte = 4 + (abierta ? 1 : 0) + (despachada ? 4 : 0) + (despachando ? 1 : 0) + 1
+  const restante = (l) => num(l.cantidad_despachada) - num(l.devuelta) - num(l.custodia)
 
   const pasos = [
     ['Solicitado por', s.solicitada_por, s.creada],
@@ -77,6 +87,12 @@ export default function DetalleRecurso() {
       {(s.estado === 'RECHAZADA' || s.estado === 'CANCELADA') && s.motivo && (
         <div className="aviso"><strong>Motivo:</strong> {s.motivo}</div>
       )}
+      {despachada && !s.sobrantes_revisados && puedeSobrante && (
+        <div className="aviso">
+          Registre los sobrantes de materiales (si los hay) y confirme que no hay más. La orden no se podrá
+          entregar al cliente hasta entonces.
+        </div>
+      )}
 
       <div className="tarjeta">
         <h3>Datos</h3>
@@ -86,6 +102,12 @@ export default function DetalleRecurso() {
           <dt>Centro de costo</dt><dd>{s.centro_costo}</dd>
           <dt>Almacén</dt><dd>{s.almacen_nombre}</dd>
           {s.vale_numero && (<><dt>No. de vale de salida</dt><dd>{s.vale_numero}</dd></>)}
+          {despachada && (
+            <>
+              <dt>Sobrantes</dt>
+              <dd>{s.sobrantes_revisados ? 'Verificados' : 'Pendientes de verificar'}</dd>
+            </>
+          )}
         </dl>
       </div>
 
@@ -97,19 +119,28 @@ export default function DetalleRecurso() {
               <tr>
                 <th>Código SAP</th><th>Descripción</th><th>UM</th><th>Solicitada</th>
                 {abierta && <th>En almacén</th>}
-                {(s.estado === 'DESPACHADA' || despachando) && <th>Despachada</th>}
+                {despachada && (<><th>Despachada</th><th>Devuelta</th><th>En custodia</th><th>Utilizada</th></>)}
+                {despachando && <th>Despachada</th>}
                 <th>Precio</th><th>Importe</th>
+                {puedeSobrante && <th />}
               </tr>
             </thead>
             <tbody>
               {s.lineas.map((l) => (
-                <tr key={l.id} className={abierta && l.stock < l.cantidad ? 'fila-alerta' : ''}>
+                <tr key={l.id} className={abierta && num(l.stock) < num(l.cantidad) ? 'fila-alerta' : ''}>
                   <td>{l.codigo_sap}</td>
                   <td>{l.descripcion}</td>
                   <td>{l.um}</td>
                   <td>{l.cantidad}</td>
                   {abierta && <td>{l.stock}</td>}
-                  {s.estado === 'DESPACHADA' && <td>{l.cantidad_despachada}</td>}
+                  {despachada && (
+                    <>
+                      <td>{l.cantidad_despachada}</td>
+                      <td>{l.devuelta}</td>
+                      <td>{l.custodia}</td>
+                      <td><strong>{l.utilizada}</strong></td>
+                    </>
+                  )}
                   {despachando && (
                     <td style={{ minWidth: 110 }}>
                       <input type="number" min="0" max={l.cantidad} step="0.001" value={desp[l.id] ?? ''}
@@ -118,16 +149,88 @@ export default function DetalleRecurso() {
                   )}
                   <td>{dinero(l.precio_unitario)}</td>
                   <td>{dinero(l.importe)}</td>
+                  {puedeSobrante && (
+                    <td>
+                      {restante(l) > 0.0005 && (
+                        <button className="btn btn-gris" onClick={() => setSob({ ...SOBRANTE_VACIO, linea: l.id })}>
+                          Registrar sobrante
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
               <tr className="total-fila">
-                <td colSpan={abierta ? 5 : 4}>Total (CUP)</td>
-                <td colSpan={3}>{dinero(s.total)}</td>
+                <td colSpan={antesImporte}>{despachada ? 'Valor utilizado (CUP)' : 'Total (CUP)'}</td>
+                <td colSpan={puedeSobrante ? 2 : 1}>{dinero(s.total)}</td>
               </tr>
             </tbody>
           </table>
         </div>
+
+        {sob && (
+          <div className="tarjeta" style={{ marginTop: '1rem', background: '#f7f8fa' }}>
+            <h3>Registrar sobrante · {s.lineas.find((l) => l.id === sob.linea)?.codigo_sap}</h3>
+            <div className="form-grid">
+              <div>
+                <label style={{ marginTop: 0 }}>
+                  Cantidad sobrante (máx. {restante(s.lineas.find((l) => l.id === sob.linea)).toFixed(3)})
+                </label>
+                <input type="number" min="0" step="0.001" value={sob.cantidad}
+                  onChange={(e) => setSob({ ...sob, cantidad: e.target.value })} />
+              </div>
+              <div>
+                <label style={{ marginTop: 0 }}>Destino del sobrante</label>
+                <select value={sob.destino} onChange={(e) => setSob({ ...sob, destino: e.target.value })}>
+                  <option value="DEVOLUCION">Devolver al almacén</option>
+                  <option value="CUSTODIA">Queda en custodia del Jefe de Brigada</option>
+                </select>
+              </div>
+              {sob.destino === 'DEVOLUCION' && (
+                <div className="campo-completo">
+                  <label style={{ marginTop: 0 }}>No. del vale de devolución</label>
+                  <input type="text" maxLength={30} value={sob.vale_devolucion}
+                    onChange={(e) => setSob({ ...sob, vale_devolucion: e.target.value })} />
+                </div>
+              )}
+            </div>
+            <div className="fila-botones">
+              <button className="btn btn-verde" disabled={ocupado} onClick={() => llamar('registrar_sobrante', sob)}>
+                Guardar sobrante
+              </button>
+              <button className="btn btn-gris" onClick={() => setSob(null)}>Cancelar</button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {s.sobrantes.length > 0 && (
+        <div className="tarjeta">
+          <h3>Sobrantes registrados</h3>
+          <div className="tabla-wrap">
+            <table>
+              <thead>
+                <tr><th>Material</th><th>Cantidad</th><th>Destino</th><th>Detalle</th><th>Registrado por</th></tr>
+              </thead>
+              <tbody>
+                {s.sobrantes.map((x) => (
+                  <tr key={x.id}>
+                    <td>{x.codigo_sap} · {x.descripcion}</td>
+                    <td>{x.cantidad}</td>
+                    <td>{x.destino_display}</td>
+                    <td>
+                      {x.destino === 'DEVOLUCION'
+                        ? `Vale ${x.vale_devolucion}`
+                        : x.orden_destino ? `Usado en la orden ${x.orden_destino}` : 'Pendiente de asignar a una orden'}
+                    </td>
+                    <td>{x.registrado_por}<div className="sub">{fecha(x.fecha)}</div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {abierta && (
         <div className="stats" style={{ marginBottom: '1rem' }}>
@@ -152,7 +255,7 @@ export default function DetalleRecurso() {
         </div>
       </div>
 
-      {acc.length > 0 && (
+      {accionesGestion.length > 0 && (
         <div className="tarjeta">
           <h3>Acciones</h3>
 
@@ -183,6 +286,11 @@ export default function DetalleRecurso() {
             )}
             {!modo && acc.includes('despachar') && (
               <button className="btn btn-verde" onClick={() => setModo('despachar')}>Registrar despacho</button>
+            )}
+            {!modo && acc.includes('revisar_sobrantes') && (
+              <button className="btn btn-verde" disabled={ocupado} onClick={() => llamar('revisar_sobrantes')}>
+                Confirmar que no hay más sobrantes
+              </button>
             )}
             {!modo && acc.includes('rechazar') && (
               <button className="btn btn-gris" onClick={() => setModo('rechazar')}>Rechazar</button>

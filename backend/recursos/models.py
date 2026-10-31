@@ -136,6 +136,7 @@ class SolicitudRecurso(models.Model):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
     fecha_despacho = models.DateTimeField(null=True, blank=True)
     vale_numero = models.CharField('No. de vale de salida', max_length=30, blank=True)
+    sobrantes_revisados = models.BooleanField('Sobrantes verificados', default=False)
     motivo = models.TextField('Motivo de rechazo o cancelación', blank=True)
 
     class Meta:
@@ -170,3 +171,31 @@ class LineaRecurso(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['solicitud', 'material'], name='material_unico_por_solicitud')
         ]
+
+class Sobrante(models.Model):
+    """Material despachado que no se utilizó: se devuelve al almacén o queda en custodia."""
+
+    class Destino(models.TextChoices):
+        DEVOLUCION = 'DEVOLUCION', 'Devuelto al almacén'
+        CUSTODIA = 'CUSTODIA', 'En custodia del Jefe de Brigada'
+
+    linea = models.ForeignKey(LineaRecurso, on_delete=models.CASCADE, related_name='sobrantes')
+    cantidad = models.DecimalField(max_digits=14, decimal_places=3)
+    destino = models.CharField(max_length=12, choices=Destino.choices)
+    vale_devolucion = models.CharField('No. de vale de devolución', max_length=30, blank=True)
+    # Solo para custodia: orden donde finalmente se usó el sobrante
+    orden_destino = models.ForeignKey(
+        'ordenes.Orden', null=True, blank=True, on_delete=models.PROTECT, related_name='sobrantes_recibidos'
+    )
+    registrado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+')
+    fecha = models.DateTimeField(auto_now_add=True)
+    asignado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'
+    )
+    fecha_asignacion = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['fecha']
+
+    def __str__(self):
+        return f'{self.linea.material.codigo_sap}: {self.cantidad} ({self.get_destino_display()})'

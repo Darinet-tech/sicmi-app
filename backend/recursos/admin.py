@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (Almacen, Material, Existencia, PresupuestoAnual,
-                     Sobregiro, SolicitudRecurso, LineaRecurso)
+                     Sobregiro, SolicitudRecurso, LineaRecurso, Sobrante)
 
 
 @admin.register(Almacen)
@@ -41,3 +41,4 @@ class SolicitudRecursoAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Sobregiro)
+admin.site.register(Sobrante)

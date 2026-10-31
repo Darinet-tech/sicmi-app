@@ -101,6 +101,13 @@ class OrdenViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Ge
             return e
         if not orden.descripcion_trabajos.strip():
             return error('Describa los trabajos realizados antes de entregar la orden.')
+        sin_revisar = orden.solicitudes_recursos.filter(
+            estado=SolicitudRecurso.Estado.DESPACHADA,
+            sobrantes_revisados=False,
+        )
+        if sin_revisar.exists():
+            codigos = ', '.join(s.codigo for s in sin_revisar)
+            return error(f'Antes de entregar, confirme los sobrantes de: {codigos}.')
         self._cambiar(orden, E.ENTREGADA, 'Trabajo entregado al cliente')
         return self.salida(orden)
 
