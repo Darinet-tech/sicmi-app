@@ -1,9 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { ClipboardList, Package, BarChart3, Lock } from 'lucide-react'
+import { ClipboardList, Package, BarChart3, FileCheck2, Lock } from 'lucide-react'
 import PaginaModulo from '../../PaginaModulo'
 import { useAuth } from '../../AuthContext'
 import { MODULOS, tieneAcceso } from '../../modulos'
-import { FileCheck } from 'lucide-react';
 
 const VE_PRESUPUESTO = ['ESPECIALISTA', 'JEFE_LOGISTICA', 'DIRECTOR_UO', 'CENTRAL']
 
@@ -11,7 +10,7 @@ export default function RecursosLayout() {
   const { usuario } = useAuth()
   const modulo = MODULOS.find((m) => m.id === 'recursos')
 
-  if (!tieneAcceso(modulo, usuario.rol)) {
+  if (!modulo || !tieneAcceso(modulo, usuario.rol)) {
     return (
       <PaginaModulo icono={Lock} titulo="Recursos y materiales">
         <div className="aviso">Su rol no tiene acceso a este módulo.</div>

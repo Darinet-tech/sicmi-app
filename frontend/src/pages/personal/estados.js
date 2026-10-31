@@ -5,4 +5,5 @@ export const ESTADOS_TRABAJADOR = {
   FUERA: 'Trabajando fuera',
   CURSO: 'Curso',
   AUSENTE: 'Ausente',
+  DESCANSO: 'Descanso',
 }
