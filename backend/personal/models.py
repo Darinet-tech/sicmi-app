@@ -105,6 +105,7 @@ class EstadoDiario(models.Model):
         FUERA = 'FUERA', 'Trabajando fuera'
         CURSO = 'CURSO', 'Curso'
         AUSENTE = 'AUSENTE', 'Ausente'
+        DESCANSO = 'DESCANSO', 'Descanso'
 
     trabajador = models.ForeignKey(Trabajador, on_delete=models.CASCADE, related_name='estados')
     fecha = models.DateField()
