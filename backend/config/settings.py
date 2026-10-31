@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -85,13 +86,13 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+DATOS_DIR = Path(os.environ.get('SICMI_DATOS', Path.home() / 'SiCMI-datos'))
+DATOS_DIR.mkdir(parents=True, exist_ok=True)
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-        "OPTIONS": {
-            "timeout": 20,  # segundos de espera antes de lanzar "database is locked"
-        },
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': DATOS_DIR / 'db.sqlite3',
     }
 }
 
