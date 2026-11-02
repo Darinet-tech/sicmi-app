@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { FileCheck2, CheckCircle2, Circle } from 'lucide-react'
 import api, { textoError } from '../../api'
+import ExportarAnexo from '../../ExportarAnexo'
 import PaginaModulo from '../../PaginaModulo'
 import { ESTADOS_TRABAJADOR } from '../personal/estados'
+import { dinero } from '../recursos/estados'
 import { CADENA_FIRMAS } from './estados'
 import { EtiquetaOrden } from './OrdenesLista'
-import { dinero } from '../recursos/estados'
 
 const fecha = (f) => (f ? new Date(f + 'T00:00:00').toLocaleDateString('es') : '—')
 
@@ -42,6 +43,7 @@ export default function OrdenDetalle() {
 
   const acc = o?.acciones || []
   const editable = acc.includes('editar')
+  const esBorrador = o?.estado === 'EN_PROCESO'
 
   // Catálogos para los desplegables (solo si la orden se puede editar)
   useEffect(() => {
@@ -122,12 +124,13 @@ export default function OrdenDetalle() {
   const disponibles = trabajadores.filter((t) => !vigentes.some((p) => p.trabajador === t.id))
   const brigadasLibres = brigadas.filter((b) => !o.brigadas.some((x) => x.vigente && x.brigada === b.id))
   const hayBrigadaVigente = o.brigadas.some((b) => b.vigente)
+  const pendientes = o.requisitos.filter((r) => !r.cumplido)
 
   return (
     <PaginaModulo
       icono={FileCheck2}
-      titulo={`Orden de trabajo ${o.codigo}`}
-      descripcion={`${o.tipo_display} · ${o.uo_acronimo}`}
+      titulo={esBorrador ? 'Orden de trabajo en proceso' : `Orden de trabajo ${o.codigo}`}
+      descripcion={`${o.tipo_display} · ${o.uo_acronimo}${esBorrador ? ` · ${o.codigo}` : ''}`}
       acciones={<Link className="btn btn-gris" to="/ordenes">← Volver</Link>}
     >
       <div className="barra" style={{ marginTop: '-0.5rem' }}>
@@ -135,10 +138,62 @@ export default function OrdenDetalle() {
         {o.solicitud && <Link to={`/solicitudes/${o.solicitud}`}>Ver solicitud origen</Link>}
       </div>
 
-      {error && <div className="error">{error}</div>}
+      <ExportarAnexo
+        titulo="Anexo 6 · Orden de trabajo (REG.3)"
+        ruta={`anexos/orden/${o.id}/`}
+        nombre={`Anexo6-Orden-${o.codigo}`}
+      />
+
+      {error && <div className="error" style={{ marginTop: '1rem' }}>{error}</div>}
       {avisos.map((a, i) => <div key={i} className="aviso">{a}</div>)}
 
-      <div className="tarjeta">
+      {esBorrador && (
+        <div className="tarjeta" style={{ marginTop: '1rem' }}>
+          <h3>Requisitos para generar la orden</h3>
+          <p style={{ marginTop: 0, color: 'var(--gris)' }}>
+            Mientras esté En proceso, la orden no tiene número oficial. Recibe su número AA-NNN al generarla,
+            y eso solo es posible cuando se cumplen todos los requisitos.
+          </p>
+          <ul className="requisitos">
+            {o.requisitos.map((r) => (
+              <li key={r.texto} className={r.cumplido ? 'ok' : ''}>
+                {r.cumplido ? <CheckCircle2 size={18} /> : <Circle size={18} />} {r.texto}
+              </li>
+            ))}
+          </ul>
+          {editable && (
+            <label style={{ fontWeight: 400 }}>
+              <input type="checkbox" checked={o.sin_materiales} disabled={ocupado}
+                onChange={(e) => llamar('editar', { sin_materiales: e.target.checked }, 'patch')} />{' '}
+              Esta orden no requiere materiales (solo mano de obra, herramientas o equipo)
+            </label>
+          )}
+          {editable && !o.sin_materiales && (
+            <div className="fila-botones" style={{ marginTop: '0.4rem' }}>
+              <Link className="btn btn-gris" to={`/recursos/solicitudes/nueva?orden=${o.id}`}>
+                Solicitar recursos
+              </Link>
+            </div>
+          )}
+          {acc.includes('generar') && (
+            <>
+              <div className="fila-botones">
+                <button className="btn btn-verde" disabled={!o.puede_generar || ocupado}
+                  onClick={() => llamar('generar')}>
+                  Generar orden de trabajo
+                </button>
+              </div>
+              {!o.puede_generar && (
+                <div className="aviso">
+                  La orden no se puede generar todavía. Falta: {pendientes.map((r) => r.texto).join('; ')}.
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="tarjeta" style={{ marginTop: '1rem' }}>
         <h3>Datos de la orden</h3>
         <dl className="datos">
           <dt>Inmueble</dt><dd>{o.inmueble_nombre}</dd>
@@ -323,32 +378,34 @@ export default function OrdenDetalle() {
             ))}
           </p>
         )}
-        {editable && (
+        {editable && !esBorrador && (
           <div className="fila-botones">
             <Link className="btn btn-verde" to={`/recursos/solicitudes/nueva?orden=${o.id}`}>Solicitar recursos</Link>
           </div>
         )}
       </div>
 
-      <div className="tarjeta">
-        <h3>Firmas</h3>
-        <div className="cadena-firmas">
-          {CADENA_FIRMAS.map(([rol, texto]) => {
-            const f = o.firmas.find((x) => x.rol === rol)
-            return (
-              <div key={rol} className={`firma ${f ? 'hecha' : ''}`}>
-                {f ? <CheckCircle2 size={22} /> : <Circle size={22} />}
-                <div>
-                  <b>{texto}</b>
-                  <small>{f ? `${f.usuario} · ${new Date(f.fecha).toLocaleString('es')}` : 'Pendiente'}</small>
+      {!esBorrador && (
+        <div className="tarjeta">
+          <h3>Firmas</h3>
+          <div className="cadena-firmas">
+            {CADENA_FIRMAS.map(([rol, texto]) => {
+              const f = o.firmas.find((x) => x.rol === rol)
+              return (
+                <div key={rol} className={`firma ${f ? 'hecha' : ''}`}>
+                  {f ? <CheckCircle2 size={22} /> : <Circle size={22} />}
+                  <div>
+                    <b>{texto}</b>
+                    <small>{f ? `${f.usuario} · ${new Date(f.fecha).toLocaleString('es')}` : 'Pendiente'}</small>
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {(acc.some((a) => a !== 'editar')) && (
+      {acc.some((a) => !['editar', 'generar'].includes(a)) && (
         <div className="tarjeta">
           <h3>Acciones</h3>
           {!noConforme && (

@@ -4,6 +4,7 @@ import { CheckCircle2, Circle } from 'lucide-react'
 import api, { textoError } from '../../api'
 import { dinero } from './estados'
 import { EtiquetaRecurso } from './ListaRecursos'
+import ExportarAnexo from '../../ExportarAnexo'
 
 const fecha = (f) => (f ? new Date(f).toLocaleString('es') : '')
 const num = (v) => Number(v || 0)
@@ -252,6 +253,30 @@ export default function DetalleRecurso() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="tarjeta">
+        <h3>Anexo 3 · Modelo de solicitud de recursos</h3>
+        <p style={{ marginTop: 0, color: 'var(--gris)' }}>
+          Se genera automáticamente con los datos de esta solicitud. Use «Salida» para extraer los materiales
+          del almacén{despachada ? ' y «Devolución» para los sobrantes que regresan.' : '. La devolución estará disponible cuando se despache.'}
+        </p>
+        <div className="exportes">
+          <ExportarAnexo
+            titulo="Salida de materiales"
+            ruta={`anexos/recursos/${s.id}/`}
+            params={{ tipo: 'salida' }}
+            nombre={`Anexo3-Salida-${s.codigo}`}
+          />
+          {despachada && (
+            <ExportarAnexo
+              titulo="Devolución de materiales"
+              ruta={`anexos/recursos/${s.id}/`}
+              params={{ tipo: 'devolucion' }}
+              nombre={`Anexo3-Devolucion-${s.codigo}`}
+            />
+          )}
         </div>
       </div>
 

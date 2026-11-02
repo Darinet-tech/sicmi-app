@@ -17,6 +17,7 @@ class Orden(models.Model):
         PREVENTIVO = 'MP', 'Preventivo'
 
     class Estado(models.TextChoices):
+        EN_PROCESO = 'EN_PROCESO', 'En proceso (sin generar)'
         REGISTRADA = 'REGISTRADA', 'Registrada'
         EN_EJECUCION = 'EN_EJECUCION', 'En ejecución'
         ENTREGADA = 'ENTREGADA', 'Entregada al cliente'
@@ -26,7 +27,8 @@ class Orden(models.Model):
 
     uo = models.ForeignKey(UnidadOrganizativa, on_delete=models.PROTECT, related_name='ordenes')
     anio = models.PositiveSmallIntegerField()
-    numero = models.PositiveIntegerField()
+    # Vacío mientras la orden está En proceso: el número oficial se asigna al generarla
+    numero = models.PositiveIntegerField(null=True, blank=True)
     tipo = models.CharField(max_length=2, choices=Tipo.choices, default=Tipo.CORRECTIVO)
     # Vacía en los mantenimientos preventivos (nacen del Plan Anual)
     solicitud = models.OneToOneField(
@@ -41,7 +43,7 @@ class Orden(models.Model):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name='ordenes_cliente'
     )
 
-    # Copiados de la solicitud al generar la orden
+    # Copiados de la solicitud al preparar la orden
     afectacion = models.CharField(max_length=200, blank=True)
     descripcion_solicitud = models.TextField(blank=True)
     inspeccion_por = models.CharField('Inspección realizada por', max_length=150, blank=True)
@@ -49,8 +51,15 @@ class Orden(models.Model):
     vehiculo = models.ForeignKey(Vehiculo, null=True, blank=True, on_delete=models.PROTECT, related_name='ordenes')
     descripcion_trabajos = models.TextField('Descripción de los trabajos realizados', blank=True)
     incidencias = models.TextField('Incidencias a reportar', blank=True)
+    sin_materiales = models.BooleanField('La orden no requiere materiales', default=False)
 
-    estado = models.CharField(max_length=15, choices=Estado.choices, default=Estado.REGISTRADA)
+    # Solo para mantenimiento preventivo: la obra del Plan Anual que originó la orden
+    accion_plan = models.ForeignKey(
+        'plan.AccionPlan', null=True, blank=True, on_delete=models.PROTECT, related_name='ordenes'
+    )
+    mes_plan = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    estado = models.CharField(max_length=15, choices=Estado.choices, default=Estado.EN_PROCESO)
     fecha_solicitud = models.DateField()
     fecha_cierre = models.DateField(null=True, blank=True)
     creada = models.DateTimeField(auto_now_add=True)
@@ -58,14 +67,16 @@ class Orden(models.Model):
     class Meta:
         verbose_name = 'Orden de trabajo'
         verbose_name_plural = 'Órdenes de trabajo'
-        ordering = ['-anio', '-numero']
+        ordering = ['-creada']
         constraints = [
             models.UniqueConstraint(fields=['uo', 'anio', 'numero'], name='orden_consecutivo_unico')
         ]
 
     @property
     def codigo(self):
-        """Formato AA-NNN: dos dígitos del año y tres del consecutivo (ej. 26-001)."""
+        """AA-NNN (ej. 26-001). Mientras es borrador no tiene número oficial."""
+        if self.numero is None:
+            return f'BORR-{self.pk}'
         return f'{self.anio % 100:02d}-{self.numero:03d}'
 
     @classmethod

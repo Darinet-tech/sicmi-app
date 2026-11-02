@@ -1,4 +1,5 @@
 export const ESTADOS_ORDEN = {
+  EN_PROCESO: 'En proceso (sin generar)',
   REGISTRADA: 'Registrada',
   EN_EJECUCION: 'En ejecución',
   ENTREGADA: 'Entregada al cliente',

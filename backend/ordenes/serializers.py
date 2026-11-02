@@ -11,6 +11,9 @@ from .reglas import acciones_permitidas, proxima_firma
 from recursos.models import LineaRecurso, SolicitudRecurso
 from recursos.servicios import materiales_de_orden
 
+MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+         'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+
 ROLES = dict(Perfil.Rol.choices)
 
 
@@ -35,6 +38,7 @@ class OrdenSerializer(serializers.ModelSerializer):
     materiales = serializers.SerializerMethodField()
     valor_total = serializers.SerializerMethodField()
     recursos = serializers.SerializerMethodField()
+    plan_texto = serializers.SerializerMethodField()
 
     def _despachados(self, obj):
         return (LineaRecurso.objects
@@ -61,7 +65,7 @@ class OrdenSerializer(serializers.ModelSerializer):
             'vehiculo', 'vehiculo_texto', 'descripcion_trabajos', 'incidencias',
             'fecha_solicitud', 'fecha_cierre', 'creada',
             'brigadas', 'participantes', 'firmas', 'proxima_firma', 'historial', 'acciones',
-            'materiales', 'valor_total', 'recursos'
+            'materiales', 'valor_total', 'recursos', 'plan',
         ]
         read_only_fields = fields
 
@@ -116,6 +120,13 @@ class OrdenSerializer(serializers.ModelSerializer):
 
     def get_acciones(self, obj):
         return acciones_permitidas(obj, self.context['request'].user)
+    
+    def get_plan_texto(self, obj):
+        a = obj.accion_plan
+        if a is None:
+            return ''
+        mes = MESES[obj.mes_plan - 1] if obj.mes_plan else ''
+        return f'Plan Anual {a.plan.anio} · {a.grupo.nombre} · {mes}'
 
 
 class OrdenEdicionSerializer(serializers.ModelSerializer):

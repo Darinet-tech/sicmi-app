@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'transporte',
     'ordenes',
     'recursos',
+    'plan',
+    'anexos',
 ]
 
 MIDDLEWARE = [

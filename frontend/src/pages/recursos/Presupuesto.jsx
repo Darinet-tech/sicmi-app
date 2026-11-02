@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import api, { textoError } from '../../api'
 import { useAuth } from '../../AuthContext'
 import { dinero } from './estados'
+import ExportarAnexo from '../../ExportarAnexo'
 
 function FilaSobregiro({ s, esCentral, onResuelto, onError }) {
   const [monto, setMonto] = useState(s.monto_solicitado)
@@ -45,6 +46,17 @@ function FilaSobregiro({ s, esCentral, onResuelto, onError }) {
             </div>
           </div>
         )}
+      </td>
+      {/* NUEVA CELDA: exportación de los Anexos 4 y 5 */}
+      <td>
+        <div className="estado-edit">
+          <ExportarAnexo compacto titulo="Anexo 4 · Solicitud de sobregiro" ruta={`anexos/sobregiro/${s.id}/`}
+            nombre={`Anexo4-Sobregiro-${s.id}`} />
+          {s.estado === 'APROBADO' && (
+            <ExportarAnexo compacto titulo="Anexo 5 · Aprobación de sobregiro" ruta={`anexos/aprobacion-sobregiro/${s.id}/`}
+              nombre={`Anexo5-Aprobacion-${s.id}`} />
+          )}
+        </div>
       </td>
     </tr>
   )
@@ -136,7 +148,7 @@ export default function Presupuesto() {
         <div className="tabla-wrap">
           <table>
             <thead>
-              <tr><th>UO · año</th><th>Solicitado (CUP)</th><th>Fundamentación</th><th>Estado</th><th /></tr>
+              <tr><th>UO · año</th><th>Solicitado (CUP)</th><th>Fundamentación</th><th>Estado</th><th /><th>Anexos</th></tr>
             </thead>
             <tbody>
               {sobregiros.map((s) => (

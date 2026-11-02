@@ -60,9 +60,8 @@ export const MODULOS = [
     descripcion: 'Planificación anual por inmueble, cronograma y aprobación.',
     icono: CalendarRange,
     ruta: '/plan',
-    roles: ['ESPECIALISTA', 'JEFE_GRUPO', 'JEFE_LOGISTICA', 'DIRECTOR_UO', 'CENTRAL'],
-    disponible: false,
-    fase: 'Fase 5',
+    roles: ['ESPECIALISTA', 'JEFE_BRIGADA', 'JEFE_GRUPO', 'JEFE_LOGISTICA', 'DIRECTOR_UO', 'CENTRAL'],
+    disponible: true,
   },
   {
     id: 'reportes',

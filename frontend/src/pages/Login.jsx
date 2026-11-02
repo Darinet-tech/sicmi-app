@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import { textoError } from '../api'
 
+
 export default function Login() {
   const { usuario, login } = useAuth()
   const navigate = useNavigate()

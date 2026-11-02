@@ -43,6 +43,7 @@ class Perfil(models.Model):
     )
     rol = models.CharField(max_length=20, choices=Rol.choices)
     cargo = models.CharField(max_length=120, blank=True)
+    bienvenida_vista = models.BooleanField('Ya vio la pantalla de bienvenida', default=False)
 
     def __str__(self):
         return f'{self.usuario.get_full_name() or self.usuario.username} ({self.get_rol_display()})'

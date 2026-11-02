@@ -27,19 +27,24 @@ export default function GenerarOrden({ solicitud }) {
   }, [puede])
 
   if (solicitud.orden_id) {
+    const enProceso = solicitud.estado === 'EN_PROGRAMACION'
     return (
       <div className="tarjeta">
         <h3>Orden de trabajo</h3>
         <p>
-          Esta solicitud tiene la orden <strong>{solicitud.orden_codigo}</strong>.
+          {enProceso
+            ? 'Esta solicitud tiene una orden en proceso, todavía sin generar.'
+            : <>Esta solicitud tiene la orden <strong>{solicitud.orden_codigo}</strong>.</>}
         </p>
-        <Link className="btn btn-verde" to={`/ordenes/${solicitud.orden_id}`}>Abrir orden</Link>
+        {usuario.rol !== 'CLIENTE' || !enProceso ? (
+          <Link className="btn btn-verde" to={`/ordenes/${solicitud.orden_id}`}>Abrir orden</Link>
+        ) : null}
       </div>
     )
   }
   if (!puede) return null
 
-  async function generar() {
+  async function crear() {
     setError('')
     setEnviando(true)
     try {
@@ -57,9 +62,10 @@ export default function GenerarOrden({ solicitud }) {
 
   return (
     <div className="tarjeta">
-      <h3>Generar orden de trabajo</h3>
+      <h3>Preparar orden de trabajo</h3>
       <p style={{ color: 'var(--gris)', marginTop: 0 }}>
-        Se le asignará el consecutivo de su UO. Al elegir la brigada se agregan sus miembros que hoy figuren como Trabajando.
+        Se crea En proceso, sin número oficial. Podrá solicitar los recursos y completar los datos, y la orden
+        se generará cuando se cumplan todos los requisitos, entre ellos el número del vale de salida de los materiales.
       </p>
       <label style={{ marginTop: 0 }}>Brigada</label>
       <select value={brigada} onChange={(e) => setBrigada(e.target.value)}>
@@ -73,8 +79,8 @@ export default function GenerarOrden({ solicitud }) {
       </select>
       {error && <div className="error">{error}</div>}
       <div className="fila-botones">
-        <button className="btn btn-verde" onClick={generar} disabled={enviando}>
-          {enviando ? 'Generando...' : 'Generar orden de trabajo'}
+        <button className="btn btn-verde" onClick={crear} disabled={enviando}>
+          {enviando ? 'Creando...' : 'Crear orden en proceso'}
         </button>
       </div>
     </div>

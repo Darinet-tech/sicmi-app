@@ -389,3 +389,81 @@ input[type='number'] {
 }
 .resultados li:last-child { border-bottom: none; }
 .resultados small { display: block; color: var(--gris); }
+
+/* ========== Botón "?" y pie de página ========== */
+.btn-icono { text-decoration: none; font-weight: 700; font-size: 1.05rem; min-width: 36px; line-height: 1.2; }
+.pie-app { text-align: center; padding: 1.5rem 1rem 2rem; color: var(--gris); font-size: 0.8rem; }
+.pie-app a { color: var(--azul); font-weight: 600; }
+
+/* ========== Pantalla de bienvenida ========== */
+.pasos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.8rem; }
+.paso {
+  position: relative; background: #fff; border: 1px solid var(--borde);
+  border-radius: 16px; padding: 1rem 1.1rem 1rem 3.5rem;
+}
+.paso-num {
+  position: absolute; left: 0.9rem; top: 0.95rem; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 800; background: #e3e6ec; color: var(--gris);
+}
+.paso h4 { margin: 0.1rem 0 0; font-size: 1rem; }
+.quien-paso { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--azul); }
+.paso p { margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--gris); line-height: 1.45; }
+.paso.mio { border-color: var(--verde); box-shadow: 0 0 0 2px rgba(4, 184, 24, 0.18); }
+.paso.mio .paso-num { background: var(--verde); color: #04210a; }
+.paso-etq {
+  display: inline-block; margin-top: 0.6rem; padding: 0.15rem 0.6rem; border-radius: 999px;
+  background: #e6f7e9; color: #05600f; font-size: 0.72rem; font-weight: 700;
+}
+.rol-tareas { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+.rol-tareas li { margin-bottom: 0.4rem; line-height: 1.45; }
+.afectaciones { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.afect {
+  background: #f7f8fa; border: 1px solid var(--borde); border-radius: 999px;
+  padding: 0.3rem 0.8rem; font-size: 0.84rem;
+}
+.afect b { color: var(--azul); margin-right: 0.4rem; }
+.afect-otra { border: 1px dashed var(--verde); background: #e6f7e9; color: #05600f; font-weight: 600; }
+
+@media print {
+  .pie-app { display: none !important; }
+}
+
+.topbar-izq { display: flex; align-items: center; gap: 0.9rem; }
+.marca-sep { width: 1px; height: 34px; background: rgba(255, 255, 255, 0.3); }
+.login-cab { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+
+/* ========== Plan anual preventivo ========== */
+.ep-BORRADOR { background: #fff1cc; color: #7a5600; }
+.ep-EN_FIRMAS { background: #e0f2fe; color: #075985; }
+.ep-APROBADO { background: var(--verde); color: #04210a; }
+
+.grupo-fila td { background: #eef0f6; font-weight: 700; color: var(--azul); }
+.prog-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 0.4rem; }
+.prog-grid small { display: block; text-align: center; color: var(--gris); font-weight: 600; font-size: 0.7rem; }
+.prog-grid input { padding: 0.35rem; text-align: center; }
+@media (max-width: 760px) { .prog-grid { grid-template-columns: repeat(6, 1fr); } }
+
+.mini-cal { display: grid; grid-template-columns: repeat(12, 22px); gap: 2px; }
+.mini-cal span {
+  display: grid; place-items: center; height: 22px; border-radius: 4px;
+  background: #eef0f6; color: #9aa3b5; font-size: 0.68rem; font-weight: 700;
+}
+.mini-cal span.on { background: var(--azul); color: #fff; }
+.chips-mes { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+.chip-mes {
+  padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.74rem; font-weight: 600;
+  background: #eef0f6; color: var(--gris); text-decoration: none;
+}
+.chip-mes.abierto { background: #e6f7e9; color: #05600f; border: 1px solid var(--verde); }
+
+/* ========== Exportación de anexos ========== */
+.exportar {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  padding: 0.6rem 0.9rem; background: #fff;
+  border: 1px solid var(--borde); border-radius: 12px;
+}
+.exportar b { font-size: 0.85rem; margin-right: auto; }
+.exportar .btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.8rem; font-size: 0.82rem; }
+.exportar.compacto { padding: 0; background: none; border: none; gap: 0.3rem; }
+.exportar.compacto .btn { padding: 0.35rem 0.5rem; }
+.exportes { display: grid; gap: 0.7rem; }

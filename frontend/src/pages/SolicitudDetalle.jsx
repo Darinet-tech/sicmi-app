@@ -4,6 +4,7 @@ import api, { API_URL, textoError } from '../api'
 import { useAuth } from '../AuthContext'
 import { Etiqueta } from './Solicitudes'
 import GenerarOrden from './GenerarOrden'
+import ExportarAnexo from '../ExportarAnexo'
 
 // Texto del botón según el estado al que llevaría la acción
 const BOTONES = {
@@ -85,6 +86,13 @@ export default function SolicitudDetalle() {
           <strong>Motivo de la devolución:</strong> {s.motivo_devolucion}
         </div>
       )}
+
+      <ExportarAnexo
+        titulo="Anexo 1 · Solicitud del servicio (REG.1)"
+        ruta={`anexos/solicitud/${s.id}/`}
+        nombre={`Anexo1-Solicitud-${s.id}`}
+      />
+      <div style={{ height: '1rem' }} />
 
       <div className="tarjeta">
         <h3>Datos de la solicitud</h3>

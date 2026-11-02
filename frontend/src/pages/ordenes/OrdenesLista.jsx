@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FileCheck2 } from 'lucide-react'
 import api, { textoError } from '../../api'
+import { useAuth } from '../../AuthContext'
+import ExportarAnexo from '../../ExportarAnexo'
 import PaginaModulo from '../../PaginaModulo'
 import { ESTADOS_ORDEN } from './estados'
 
@@ -10,8 +12,10 @@ export function EtiquetaOrden({ estado }) {
 }
 
 export default function OrdenesLista() {
+  const { usuario } = useAuth()
   const [lista, setLista] = useState([])
   const [filtro, setFiltro] = useState('')
+  const [anio, setAnio] = useState(new Date().getFullYear())
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(true)
 
@@ -40,6 +44,24 @@ export default function OrdenesLista() {
           ))}
         </select>
       </div>
+
+      {usuario.rol !== 'CLIENTE' && (
+        <div className="tarjeta">
+          <div className="exportes">
+            <div style={{ maxWidth: 140 }}>
+              <label style={{ marginTop: 0 }}>Año del registro</label>
+              <input type="number" min="2020" max="2100" value={anio}
+                onChange={(e) => setAnio(e.target.value)} />
+            </div>
+            <ExportarAnexo
+              titulo="Anexo 2 · Registro de órdenes (REG.2)"
+              ruta="anexos/registro-ordenes/"
+              params={{ anio }}
+              nombre={`Anexo2-Registro-${anio}`}
+            />
+          </div>
+        </div>
+      )}
 
       {error && <div className="error">{error}</div>}
       {cargando ? (

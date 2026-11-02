@@ -24,7 +24,7 @@ export function AuthProvider({ children }) {
     const { data } = await api.post('token/', { username, password })
     localStorage.setItem('token', data.access)
     try {
-    const yo = await api.get('yo/')
+      const yo = await api.get('yo/')
       setUsuario(yo.data)
     } catch (e) {
       localStorage.removeItem('token')
@@ -37,8 +37,18 @@ export function AuthProvider({ children }) {
     setUsuario(null)
   }
 
+  // Registra en el servidor que ya vio la bienvenida y lo refleja en pantalla
+  async function marcarBienvenida() {
+    try {
+      await api.post('bienvenida/vista/')
+    } catch {
+      // Si falla, igual se le deja continuar: la volverá a ver en su próxima sesión
+    }
+    setUsuario((u) => (u ? { ...u, bienvenida_vista: true } : u))
+  }
+
   return (
-    <AuthContext.Provider value={{ usuario, cargando, login, logout }}>
+    <AuthContext.Provider value={{ usuario, cargando, login, logout, marcarBienvenida }}>
       {children}
     </AuthContext.Provider>
   )
