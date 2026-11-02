@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/', include('recursos.urls')),
     path('api/', include('plan.urls')),
     path('api/', include('anexos.urls')),
+    path('api/', include('reportes.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     

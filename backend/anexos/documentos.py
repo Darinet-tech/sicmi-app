@@ -342,3 +342,54 @@ def anexo9(plan):
         firma('DIRECTOR_UO', 'Aprobado por: Director Unidad'),
     ])
     return doc
+
+# ---------- Anexo 10 ----------
+def anexo10(cert):
+    from reportes.calculos import MESES, filas_certificacion
+
+    filas, resumen = filas_certificacion(cert)
+    uo = cert.uo
+    doc = Documento('CERTIFICACIÓN MENSUAL DE MANTENIMIENTO DE INMUEBLES POR MEDIOS PROPIOS EN FÍSICO',
+                    'ANEXO 10 · REG.5-PE-SG-020/18',
+                    f'Anexo10-Certificacion-{uo.acronimo}-{cert.anio}-{cert.mes:02d}', horizontal=True)
+    doc.campos([
+        ('Unidad Organizativa', f'{uo.nombre} ({uo.acronimo})'),
+        ('Mes', MESES[cert.mes - 1]),
+        ('Año', str(cert.anio)),
+    ], cols=3)
+
+    def texto_pct(v):
+        return '' if v is None else f'{v} %'
+
+    filas_doc = []
+    for f in filas:
+        incidencias = ' '.join(x for x in (f['incidencia'], f['auto']) if x)
+        accion = f['grupo'] if f['grupo_num'] == 99 else f"Mantenimiento y reparación menor de {f['grupo']}"
+        filas_doc.append((f['inmueble'], accion, f['plan'], f['real'], texto_pct(f['pct']),
+                          f['correctivas'], f['total'], incidencias))
+    resaltar = {len(filas_doc)}
+    filas_doc.append(('Resumen total de acciones', '', resumen['plan'], resumen['real'],
+                      texto_pct(resumen['pct']), resumen['correctivas'], resumen['total'], ''))
+    resaltar.add(len(filas_doc))
+    filas_doc.append(('Cantidad de inmuebles donde se ejecutaron acciones constructivas', '', '', '', '', '',
+                      resumen['inmuebles'], ''))
+
+    doc.tabla(None,
+              ['Denominación del inmueble', 'Resumen de acciones', 'Prev. plan', 'Prev. real', '% cumpl.',
+               'Correctivas', 'Total', 'Incidencias'],
+              filas_doc,
+              formatos=['texto', 'texto', 'cant', 'cant', 'texto', 'cant', 'cant', 'texto'],
+              pesos=[3, 4.5, 0.9, 0.9, 0.9, 1.2, 0.9, 4.2], resaltar=resaltar)
+
+    firmadas = {x.rol: x for x in cert.firmas.select_related('usuario')}
+
+    def firma(rol, titulo):
+        x = firmadas.get(rol)
+        return (titulo, nombre(x.usuario) if x else '', f_fecha(x.fecha) if x else '')
+
+    doc.firmas([
+        firma('ESPECIALISTA', 'Elaborado por: Especialista en Obras de Ingenierías'),
+        firma('JEFE_GRUPO', 'Revisado por: Jefe Grupo de Servicios'),
+        firma('JEFE_LOGISTICA', 'Aprobado por: Jefe Dpto. Logística y Servicios'),
+    ])
+    return doc

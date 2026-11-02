@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     AnexoSolicitud, AnexoRegistroOrdenes, AnexoRecursos,
     AnexoSobregiro, AnexoAprobacion, AnexoOrden,
-    AnexoPlan, AnexoTareaTecnica, AnexoCroquis,
+    AnexoPlan, AnexoTareaTecnica, AnexoCroquis, AnexoCertificacion,
 )
 
 urlpatterns = [
@@ -15,4 +15,5 @@ urlpatterns = [
     path('plan/<int:pk>/', AnexoPlan.as_view()),
     path('tarea-tecnica/<int:pk>/', AnexoTareaTecnica.as_view()),
     path('croquis/<int:pk>/', AnexoCroquis.as_view()),
+    path('certificacion/<int:pk>/', AnexoCertificacion.as_view()),
 ]

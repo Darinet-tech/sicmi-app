@@ -70,8 +70,7 @@ export const MODULOS = [
     icono: BarChart3,
     ruta: '/reportes',
     roles: ['ESPECIALISTA', 'JEFE_GRUPO', 'JEFE_LOGISTICA', 'DIRECTOR_UO', 'CENTRAL'],
-    disponible: false,
-    fase: 'Fase 6',
+    disponible: true,
   },
   {
     id: 'inmuebles',

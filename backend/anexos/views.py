@@ -15,6 +15,8 @@ from solicitudes.models import Solicitud
 from solicitudes.permissions import TienePerfil
 from . import documentos
 from .render import a_excel, a_pdf
+from reportes.models import Certificacion
+from reportes.permissions import PermisoReportes
 
 
 def entregar(doc, request):
@@ -155,3 +157,11 @@ class AnexoCroquis(_AnexoObra):
     relacion = 'croquis'
     faltante = 'Esta obra todavía no tiene croquis.'
     constructor = staticmethod(documentos.anexo8)
+
+class AnexoCertificacion(APIView):
+    permission_classes = [PermisoReportes]
+
+    def get(self, request, pk):
+        qs = de_su_uo(Certificacion.objects.select_related('uo').prefetch_related('firmas__usuario'),
+                      request.user.perfil)
+        return entregar(documentos.anexo10(get_object_or_404(qs, pk=pk)), request)

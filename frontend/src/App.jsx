@@ -27,6 +27,10 @@ import PlanLista from './pages/plan/PlanLista'
 import PlanDetalle from './pages/plan/PlanDetalle'
 import DocumentacionTecnica from './pages/plan/DocumentacionTecnica'
 import GenerarOrdenPlan from './pages/plan/GenerarOrdenPlan'
+import ReportesLayout from './pages/reportes/ReportesLayout'
+import Resumen from './pages/reportes/Resumen'
+import Certificaciones from './pages/reportes/Certificaciones'
+import CertificacionDetalle from './pages/reportes/CertificacionDetalle'
 
 // Protege las pantallas: sin sesión, al login; en la primera visita, a la bienvenida
 function Privada({ children }) {
@@ -66,6 +70,13 @@ export default function App() {
         <Route path="/plan/:id" element={<PlanDetalle />} />
         <Route path="/plan/acciones/:id/documentacion" element={<DocumentacionTecnica />} />
         <Route path="/plan/acciones/:id/generar" element={<GenerarOrdenPlan />} />
+
+        <Route path="/reportes" element={<ReportesLayout />}>
+          <Route index element={<Navigate to="resumen" replace />} />
+          <Route path="resumen" element={<Resumen />} />
+          <Route path="certificaciones" element={<Certificaciones />} />
+          <Route path="certificaciones/:id" element={<CertificacionDetalle />} />
+        </Route>
 
         <Route path="/personal" element={<PersonalLayout />}>
           <Route index element={<Navigate to="pase-lista" replace />} />
