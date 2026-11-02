@@ -2,6 +2,14 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+
+class LoginView(TokenObtainPairView):
+    """Inicio de sesión con límite de intentos (la tasa se configura en settings: 'login')."""
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'login'
 
 
 @api_view(['GET'])

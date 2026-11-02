@@ -50,6 +50,11 @@ class SolicitudSerializer(serializers.ModelSerializer):
     def validate(self, datos):
         uo = self.context['request'].user.perfil.uo
 
+        def validate_foto(self, foto):
+            if foto and foto.size > 8 * 1024 * 1024:
+                raise serializers.ValidationError('La foto no puede pesar más de 8 MB.')
+            return foto
+
         def valor(campo, defecto=None):
             return datos.get(campo, getattr(self.instance, campo, defecto))
 
