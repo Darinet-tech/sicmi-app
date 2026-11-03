@@ -8,3 +8,4 @@ dist/
 media/
 datos/
 *.xlsx
+*.bak
