@@ -82,7 +82,7 @@ class SolicitudRecursoViewSet(viewsets.ViewSet):
         orden = Orden.objects.filter(pk=entero(request.data.get('orden')), uo=perfil.uo).first()
         if orden is None:
             return error('Seleccione una orden de trabajo válida.')
-        if orden.estado not in (Orden.Estado.REGISTRADA, Orden.Estado.EN_EJECUCION):
+        if orden.estado not in (Orden.Estado.EN_PROCESO, Orden.Estado.REGISTRADA, Orden.Estado.EN_EJECUCION):
             return error('Solo se piden recursos para órdenes abiertas.')
         almacen = Almacen.objects.filter(pk=entero(request.data.get('almacen')), uo=perfil.uo).first()
         if almacen is None:

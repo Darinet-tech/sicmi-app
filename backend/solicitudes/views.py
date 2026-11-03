@@ -18,8 +18,8 @@ class SolicitudViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil = self.request.user.perfil
         qs = (Solicitud.objects
-            .select_related('inmueble', 'solicitante', 'area_solicitante', 'local', 'afectacion', 'orden')
-            .prefetch_related('historial'))
+              .select_related('inmueble', 'solicitante', 'area_solicitante', 'local', 'afectacion', 'orden')
+              .prefetch_related('historial'))
         if perfil.es_central:
             return qs
         qs = qs.filter(uo=perfil.uo)
@@ -50,13 +50,16 @@ class SolicitudViewSet(viewsets.ModelViewSet):
         solicitud = self.get_object()
         perfil = request.user.perfil
         nuevo = request.data.get('estado')
-        comentario = request.data.get('comentario', '')
+        comentario = str(request.data.get('comentario', '') or '').strip()
 
         if nuevo not in Solicitud.Estado.values:
             return Response({'detalle': 'Estado no válido.'}, status=status.HTTP_400_BAD_REQUEST)
         if not puede_transicionar(solicitud, nuevo, perfil):
             return Response({'detalle': 'No tiene permiso para este cambio de estado.'},
                             status=status.HTTP_403_FORBIDDEN)
+        if nuevo == Solicitud.Estado.DEVUELTA and not comentario:
+            return Response({'detalle': 'Debe indicar el motivo de la devolución.'},
+                            status=status.HTTP_400_BAD_REQUEST)
         if nuevo == Solicitud.Estado.EN_PROGRAMACION and 'es_urgente' not in request.data:
             return Response({'detalle': 'Debe indicar si el trabajo es urgente o no.'},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -64,12 +67,10 @@ class SolicitudViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             anterior = solicitud.estado
             solicitud.estado = nuevo
-            if nuevo == Solicitud.Estado.EN_PROGRAMACION:
-                solicitud.es_urgente = str(request.data['es_urgente']).lower() in ('true', '1')
             if nuevo == Solicitud.Estado.DEVUELTA:
                 solicitud.motivo_devolucion = comentario
-            if 'es_urgente' in request.data and nuevo == Solicitud.Estado.EN_PROGRAMACION:
-                solicitud.es_urgente = bool(request.data['es_urgente'])
+            if nuevo == Solicitud.Estado.EN_PROGRAMACION:
+                solicitud.es_urgente = str(request.data['es_urgente']).lower() in ('true', '1')
             solicitud.save()
             HistorialEstado.objects.create(
                 solicitud=solicitud, estado_anterior=anterior, estado_nuevo=nuevo,

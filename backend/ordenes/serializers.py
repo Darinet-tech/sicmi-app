@@ -4,17 +4,16 @@ from rest_framework import serializers
 from accounts.models import Perfil
 from personal.models import EstadoDiario
 from personal.utils import estado_trabajador
+from recursos.models import SolicitudRecurso
+from recursos.servicios import materiales_de_orden
 from transporte.models import EstadoVehiculo
 from transporte.utils import estado_vehiculo
 from .models import Orden
-from .reglas import acciones_permitidas, proxima_firma
-from recursos.models import LineaRecurso, SolicitudRecurso
-from recursos.servicios import materiales_de_orden
-
-MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
-         'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+from .reglas import acciones_permitidas, proxima_firma, requisitos as calcular_requisitos
 
 ROLES = dict(Perfil.Rol.choices)
+MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+         'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
 
 class OrdenSerializer(serializers.ModelSerializer):
@@ -38,23 +37,9 @@ class OrdenSerializer(serializers.ModelSerializer):
     materiales = serializers.SerializerMethodField()
     valor_total = serializers.SerializerMethodField()
     recursos = serializers.SerializerMethodField()
+    requisitos = serializers.SerializerMethodField()
+    puede_generar = serializers.SerializerMethodField()
     plan_texto = serializers.SerializerMethodField()
-
-    def _despachados(self, obj):
-        return (LineaRecurso.objects
-                .filter(solicitud__orden=obj, solicitud__estado=SolicitudRecurso.Estado.DESPACHADA,
-                        cantidad_despachada__gt=0)
-                .select_related('material', 'solicitud'))
-
-    def get_materiales(self, obj):
-        return materiales_de_orden(obj)
-
-    def get_valor_total(self, obj):
-        return round(sum((f['importe'] for f in materiales_de_orden(obj)), 0), 2)
-
-    def get_recursos(self, obj):
-        return [{'id': s.id, 'codigo': s.codigo, 'estado': s.get_estado_display()}
-                for s in obj.solicitudes_recursos.all()]
 
     class Meta:
         model = Orden
@@ -65,7 +50,8 @@ class OrdenSerializer(serializers.ModelSerializer):
             'vehiculo', 'vehiculo_texto', 'descripcion_trabajos', 'incidencias',
             'fecha_solicitud', 'fecha_cierre', 'creada',
             'brigadas', 'participantes', 'firmas', 'proxima_firma', 'historial', 'acciones',
-            'materiales', 'valor_total', 'recursos', 'plan',
+            'materiales', 'valor_total', 'recursos',
+            'sin_materiales', 'requisitos', 'puede_generar', 'plan_texto',
         ]
         read_only_fields = fields
 
@@ -120,7 +106,25 @@ class OrdenSerializer(serializers.ModelSerializer):
 
     def get_acciones(self, obj):
         return acciones_permitidas(obj, self.context['request'].user)
-    
+
+    def get_materiales(self, obj):
+        return materiales_de_orden(obj)
+
+    def get_valor_total(self, obj):
+        return round(sum((f['importe'] for f in materiales_de_orden(obj)), 0), 2)
+
+    def get_recursos(self, obj):
+        return [{'id': s.id, 'codigo': s.codigo, 'estado': s.get_estado_display()}
+                for s in obj.solicitudes_recursos.all()]
+
+    def get_requisitos(self, obj):
+        if obj.estado != Orden.Estado.EN_PROCESO:
+            return []
+        return [{'texto': t, 'cumplido': ok} for t, ok in calcular_requisitos(obj)]
+
+    def get_puede_generar(self, obj):
+        return obj.estado == Orden.Estado.EN_PROCESO and all(ok for _, ok in calcular_requisitos(obj))
+
     def get_plan_texto(self, obj):
         a = obj.accion_plan
         if a is None:
@@ -134,7 +138,7 @@ class OrdenEdicionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Orden
-        fields = ['descripcion_trabajos', 'incidencias', 'vehiculo']
+        fields = ['descripcion_trabajos', 'incidencias', 'vehiculo', 'sin_materiales']
 
     def validate_vehiculo(self, vehiculo):
         if vehiculo is None or vehiculo == self.instance.vehiculo:
@@ -144,3 +148,16 @@ class OrdenEdicionSerializer(serializers.ModelSerializer):
         if estado_vehiculo(vehiculo, timezone.localdate()) != EstadoVehiculo.Estado.DISPONIBLE:
             raise serializers.ValidationError(f'El vehículo {vehiculo.chapa} no está disponible hoy.')
         return vehiculo
+
+    def validate_sin_materiales(self, valor):
+        if valor == self.instance.sin_materiales:
+            return valor
+        if self.instance.estado != Orden.Estado.EN_PROCESO:
+            raise serializers.ValidationError('Solo puede cambiarse mientras la orden está en proceso.')
+        if valor:
+            activas = self.instance.solicitudes_recursos.exclude(
+                estado__in=[SolicitudRecurso.Estado.CANCELADA, SolicitudRecurso.Estado.RECHAZADA])
+            if activas.exists():
+                raise serializers.ValidationError(
+                    'Cancele primero las solicitudes de recursos activas de esta orden.')
+        return valor

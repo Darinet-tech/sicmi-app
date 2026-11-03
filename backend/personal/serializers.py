@@ -8,6 +8,7 @@ class TrabajadorBasicoSerializer(serializers.ModelSerializer):
     cargo_display = serializers.CharField(source='get_cargo_display', read_only=True)
     uo_acronimo = serializers.CharField(source='uo.acronimo', read_only=True)
     departamento_nombre = serializers.CharField(source='departamento.nombre', read_only=True)
+    departamento_acronimo = serializers.CharField(source='departamento.acronimo', read_only=True)
 
     class Meta:
         model = Trabajador
@@ -21,6 +22,7 @@ class TrabajadorSerializer(serializers.ModelSerializer):
     nivel_escolar_display = serializers.CharField(source='get_nivel_escolar_display', read_only=True)
     uo_acronimo = serializers.CharField(source='uo.acronimo', read_only=True)
     departamento_nombre = serializers.CharField(source='departamento.nombre', read_only=True)
+    departamento_acronimo = serializers.CharField(source='departamento.acronimo', read_only=True)
     centro_principal_nombre = serializers.CharField(source='centro_principal.codigo', read_only=True)
     centro_asociado_nombre = serializers.CharField(
         source='centro_asociado.codigo', read_only=True, default=None

@@ -20,8 +20,11 @@ ROLES_CANCELAN = {R.JEFE_LOGISTICA, R.JEFE_GRUPO, R.ESPECIALISTA}
 def puede_transicionar(solicitud, nuevo_estado, perfil):
     """Devuelve True si el perfil puede mover la solicitud al nuevo estado."""
     if nuevo_estado == E.CANCELADA:
-        # Con orden generada, se cancela la orden (eso cancela también la solicitud)
         if solicitud.estado in (E.CERRADA, E.CANCELADA, E.ORDEN_GENERADA):
+            return False
+        # Con una orden en proceso se cancela la orden (eso cancela también la solicitud)
+        orden = getattr(solicitud, 'orden', None)
+        if orden is not None and orden.estado != 'CANCELADA':
             return False
         es_dueño = perfil.rol == R.CLIENTE and solicitud.solicitante_id == perfil.usuario_id
         return perfil.rol in ROLES_CANCELAN or es_dueño

@@ -9,15 +9,15 @@ from rest_framework.views import APIView
 from accounts.models import Perfil
 from personal.models import Trabajador, Brigada, EstadoDiario
 from personal.utils import estado_trabajador
+from recursos.models import SolicitudRecurso
 from solicitudes.models import Solicitud, HistorialEstado
 from solicitudes.permissions import TienePerfil
 from transporte.models import Vehiculo, EstadoVehiculo
 from transporte.utils import estado_vehiculo
 from .models import Orden, ParticipanteOrden, Firma, HistorialOrden
-from .reglas import acciones_permitidas
+from .reglas import acciones_permitidas, requisitos
 from .serializers import OrdenSerializer, OrdenEdicionSerializer
 from .servicios import agregar_brigada_a_orden, cerrar_brigada
-from recursos.models import SolicitudRecurso
 
 E = Orden.Estado
 
@@ -32,15 +32,17 @@ class OrdenViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Ge
 
     def get_queryset(self):
         qs = (Orden.objects
-              .select_related('uo', 'inmueble', 'area_solicitante', 'local', 'centro_costo', 'cliente', 'vehiculo')
-              .prefetch_related('brigadas__brigada', 'participantes__trabajador',
-                                'firmas__usuario', 'historial__usuario'))
+              .select_related('uo', 'inmueble', 'area_solicitante', 'local', 'centro_costo', 'cliente',
+                              'vehiculo', 'accion_plan__plan', 'accion_plan__grupo')
+              .prefetch_related('brigadas__brigada', 'participantes__trabajador', 'firmas__usuario',
+                                'historial__usuario', 'solicitudes_recursos'))
         perfil = self.request.user.perfil
         if perfil.es_central:
             return qs
         qs = qs.filter(uo=perfil.uo)
         if perfil.rol == Perfil.Rol.CLIENTE:
-            qs = qs.filter(cliente=self.request.user)  # el cliente solo ve las suyas
+            # El cliente solo ve las suyas, y nunca los borradores
+            qs = qs.filter(cliente=self.request.user).exclude(estado=E.EN_PROCESO)
         return qs
 
     # ---------- ayudas ----------
@@ -83,6 +85,32 @@ class OrdenViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Ge
         s.save()
         return self.salida(orden)
 
+    # ---------- generar el número oficial ----------
+    @action(detail=True, methods=['post'])
+    def generar(self, request, pk=None):
+        orden = self.get_object()
+        if (e := self._permitido(orden, 'generar')):
+            return e
+        faltan = [texto for texto, ok in requisitos(orden) if not ok]
+        if faltan:
+            return error('Todavía no se puede generar la orden. Falta: ' + '; '.join(faltan) + '.')
+        hoy = timezone.localdate()
+        with transaction.atomic():
+            orden.anio = hoy.year
+            orden.numero = Orden.siguiente_numero(orden.uo, hoy.year)
+            orden.save()
+            self._cambiar(orden, E.REGISTRADA, f'Orden generada con el número {orden.codigo}')
+            if orden.solicitud_id:
+                sol = orden.solicitud
+                anterior = sol.estado
+                sol.estado = Solicitud.Estado.ORDEN_GENERADA
+                sol.save()
+                HistorialEstado.objects.create(
+                    solicitud=sol, estado_anterior=anterior, estado_nuevo=sol.estado,
+                    usuario=request.user, comentario=f'Se generó la orden de trabajo {orden.codigo}',
+                )
+        return self.salida(orden)
+
     # ---------- ciclo de vida ----------
     @action(detail=True, methods=['post'])
     def iniciar(self, request, pk=None):
@@ -102,9 +130,7 @@ class OrdenViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Ge
         if not orden.descripcion_trabajos.strip():
             return error('Describa los trabajos realizados antes de entregar la orden.')
         sin_revisar = orden.solicitudes_recursos.filter(
-            estado=SolicitudRecurso.Estado.DESPACHADA,
-            sobrantes_revisados=False,
-        )
+            estado=SolicitudRecurso.Estado.DESPACHADA, sobrantes_revisados=False)
         if sin_revisar.exists():
             codigos = ', '.join(s.codigo for s in sin_revisar)
             return error(f'Antes de entregar, confirme los sobrantes de: {codigos}.')
@@ -166,6 +192,7 @@ class OrdenViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Ge
             return error('Indique el motivo de la cancelación.')
         with transaction.atomic():
             self._cambiar(orden, E.CANCELADA, f'Orden cancelada: {motivo}')
+            # Lo que todavía no salió del almacén se cancela con la orden (lo ya despachado se conserva)
             SolicitudRecurso.objects.filter(
                 orden=orden,
                 estado__in=[SolicitudRecurso.Estado.SOLICITADA, SolicitudRecurso.Estado.PENDIENTE_SOBREGIRO,
@@ -208,7 +235,8 @@ class OrdenViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Ge
         # Aviso (no bloquea): ya participa en otra orden abierta
         avisos = []
         otras = (ParticipanteOrden.objects
-                 .filter(trabajador=t, hasta__isnull=True, orden__estado__in=[E.REGISTRADA, E.EN_EJECUCION])
+                 .filter(trabajador=t, hasta__isnull=True,
+                         orden__estado__in=[E.EN_PROCESO, E.REGISTRADA, E.EN_EJECUCION])
                  .exclude(orden=orden).select_related('orden'))
         for p in otras:
             avisos.append(f'{t.nombre} también participa en la orden abierta {p.orden.codigo}.')
@@ -243,7 +271,8 @@ class OrdenViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Ge
                 for b in orden.brigadas.filter(hasta__isnull=True).select_related('brigada'):
                     cerrar_brigada(orden, b.brigada)
             avisos = agregar_brigada_a_orden(orden, brigada, request.user)
-            self._nota(orden, f'Brigada asignada: {brigada.nombre}' + (' (reemplaza a la anterior)' if reemplazar else ''))
+            self._nota(orden, f'Brigada asignada: {brigada.nombre}'
+                       + (' (reemplaza a la anterior)' if reemplazar else ''))
         return self.salida(orden, avisos)
 
     @action(detail=True, methods=['post'])
@@ -261,13 +290,13 @@ class OrdenViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Ge
 
 
 class GenerarOrdenView(APIView):
-    """POST /api/solicitudes/<id>/generar-orden/  (solo el Especialista)."""
+    """POST /api/solicitudes/<id>/generar-orden/ - crea la orden EN PROCESO (borrador, sin número)."""
     permission_classes = [TienePerfil]
 
     def post(self, request, pk):
         perfil = request.user.perfil
         if perfil.rol != Perfil.Rol.ESPECIALISTA:
-            return error('Solo el Especialista genera las órdenes de trabajo.', status.HTTP_403_FORBIDDEN)
+            return error('Solo el Especialista prepara las órdenes de trabajo.', status.HTTP_403_FORBIDDEN)
         solicitud = get_object_or_404(Solicitud, pk=pk, uo=perfil.uo)
         if solicitud.estado != Solicitud.Estado.EN_PROGRAMACION:
             return error('La solicitud debe estar En programación (con la inspección registrada).')
@@ -294,7 +323,7 @@ class GenerarOrdenView(APIView):
 
         with transaction.atomic():
             orden = Orden.objects.create(
-                uo=perfil.uo, anio=hoy.year, numero=Orden.siguiente_numero(perfil.uo, hoy.year),
+                uo=perfil.uo, anio=hoy.year, numero=None, estado=Orden.Estado.EN_PROCESO,
                 tipo=Orden.Tipo.CORRECTIVO, solicitud=solicitud,
                 inmueble=solicitud.inmueble, centro_costo=solicitud.centro_costo,
                 area_solicitante=solicitud.area_solicitante, local=solicitud.local,
@@ -304,15 +333,8 @@ class GenerarOrdenView(APIView):
                 vehiculo=vehiculo, fecha_solicitud=solicitud.creada.date(),
             )
             HistorialOrden.objects.create(
-                orden=orden, estado_nuevo=orden.estado, usuario=request.user, comentario='Orden registrada',
+                orden=orden, estado_nuevo=orden.estado, usuario=request.user,
+                comentario='Orden creada en proceso (todavía sin número oficial)',
             )
             avisos = agregar_brigada_a_orden(orden, brigada, request.user) if brigada else []
-
-            anterior = solicitud.estado
-            solicitud.estado = Solicitud.Estado.ORDEN_GENERADA
-            solicitud.save()
-            HistorialEstado.objects.create(
-                solicitud=solicitud, estado_anterior=anterior, estado_nuevo=solicitud.estado,
-                usuario=request.user, comentario=f'Se generó la orden de trabajo {orden.codigo}',
-            )
         return Response({'id': orden.id, 'codigo': orden.codigo, 'avisos': avisos}, status=status.HTTP_201_CREATED)
